@@ -1,0 +1,282 @@
+package de.bergwild.android.mobile.document;
+
+import de.bergwild.android.mobile.tools.ColorTool;
+import de.bw.mm.basis.MColor;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
+
+public class StyleTextPainter {
+
+	public static final int separator_dark = Color.argb(255, 90, 90, 90);
+	public static final int separator_medium = Color.argb(255, 155, 155, 155);
+	public static final int separator_bride = Color.argb(255, 205, 205, 205);
+
+	// public static void paint(StyleText styleText, Graphics2D graphics, String lang, boolean active, float zoomFactor)
+	// {
+	//
+	// Graphics2D g2 = (Graphics2D) graphics.create();
+	// g2.setFont(FontTool.toFont(styleText.getTextFont()));
+	//
+	// if (zoomFactor != 1) {
+	// final AffineTransform at_zoom = new AffineTransform();
+	// at_zoom.setToScale(zoomFactor, zoomFactor);
+	// g2.transform(at_zoom);
+	// }
+	//
+	// int x = styleText.getX();
+	// int y = styleText.getY();
+	//
+	// String text = styleText.getText().translate();
+	//
+	// int borderType = styleText.getBorderType();
+	//
+	// g2.setStroke(new BasicStroke());
+	// RenderingTool.setRenderingForTextAndGrafic(g2);
+	// g2.setColor(ColorTool.toColor(active ? styleText.getActiveTextColor() : styleText.getTextFont().getColor()));
+	// final GlyphVector glyphVector =
+	// g2.getFont().createGlyphVector(g2.getFontMetrics(g2.getFont()).getFontRenderContext(), text);
+	// final Shape s = glyphVector.getOutline(x, y);
+	//
+	// double theta = Math.toRadians(styleText.getRotation());
+	// g2.rotate(theta, x, y);
+	//
+	// g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, styleText.getBackTransparenz() / 100f));
+	//
+	// if (borderType == RStatics.STYLETEXT_BORDER_WITHOUT) {
+	// g2.drawString(text, x, y);
+	// } else if (borderType == RStatics.STYLETEXT_BORDER_CLOUD) {
+	// if (styleText.isWithOutsideBorder()) {
+	// g2.setStroke(new BasicStroke(styleText.getBorderSizeInside() + styleText.getBorderSizeOutside(),
+	// BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+	// g2.setColor(ColorTool.toColor(styleText.getBorderColor()));
+	// g2.draw(s);
+	// }
+	// g2.setStroke(new BasicStroke(styleText.getBorderSizeInside(), BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+	// g2.setColor(ColorTool.toColor(styleText.getBackColor()));
+	// g2.draw(s);
+	// g2.setColor(ColorTool.toColor(active ? styleText.getActiveTextColor() : styleText.getTextFont().getColor()));
+	// g2.setStroke(new BasicStroke());
+	// if (!styleText.isTransparentText())
+	// g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1f));
+	// g2.fill(s);
+	// } else if (borderType == RStatics.STYLETEXT_BORDER_BOX) {
+	// Insets ins = styleText.getBorderInsets();
+	// float textWidth = (float) g2.getFont().getStringBounds(text, g2.getFontRenderContext()).getWidth();
+	// LineMetrics lm = g2.getFont().getLineMetrics(text, g2.getFontRenderContext());
+	// Rectangle2D box = new Rectangle2D.Double(x - ins.left, (y - lm.getAscent()) - ins.top, textWidth + (ins.left +
+	// ins.right), (lm.getAscent() + lm.getDescent()) + (ins.top + ins.bottom));
+	// g2.setColor(ColorTool.toColor(styleText.getBackColor()));
+	// g2.fillRect((int) box.getX(), (int) box.getY(), (int) box.getWidth(), (int) box.getHeight());
+	// if (styleText.isWithOutsideBorder()) {
+	// g2.setStroke(new BasicStroke(styleText.getBorderSizeOutside(), BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+	// g2.setColor(ColorTool.toColor(styleText.getBorderColor()));
+	// g2.drawRect((int) box.getX(), (int) box.getY(), (int) box.getWidth(), (int) box.getHeight());
+	// }
+	// g2.setColor(ColorTool.toColor(active ? styleText.getActiveTextColor() : styleText.getTextFont().getColor()));
+	// g2.setStroke(new BasicStroke());
+	// if (!styleText.isTransparentText())
+	// g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1f));
+	// g2.fill(s);
+	//
+	// } else if (borderType == RStatics.STYLETEXT_BORDER_BOX_ROUND) {
+	// Insets ins = styleText.getBorderInsets();
+	// float textWidth = (float) g2.getFont().getStringBounds(text, g2.getFontRenderContext()).getWidth();
+	// LineMetrics lm = g2.getFont().getLineMetrics(text, g2.getFontRenderContext());
+	// Rectangle2D box = new Rectangle2D.Double(x - ins.left, (y - lm.getAscent()) - ins.top, textWidth + (ins.left +
+	// ins.right), (lm.getAscent() + lm.getDescent()) + (ins.top + ins.bottom));
+	// g2.setColor(ColorTool.toColor(styleText.getBackColor()));
+	// g2.fillRoundRect((int) box.getX(), (int) box.getY(), (int) box.getWidth(), (int) box.getHeight(),
+	// styleText.getRadius(), styleText.getRadius());
+	// if (styleText.isWithOutsideBorder()) {
+	// g2.setStroke(new BasicStroke(styleText.getBorderSizeOutside(), BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+	// g2.setColor(ColorTool.toColor(styleText.getBorderColor()));
+	// g2.drawRoundRect((int) box.getX(), (int) box.getY(), (int) box.getWidth(), (int) box.getHeight(),
+	// styleText.getRadius(), styleText.getRadius());
+	// }
+	// g2.setColor(ColorTool.toColor(active ? styleText.getActiveTextColor() : styleText.getTextFont().getColor()));
+	// g2.setStroke(new BasicStroke());
+	// if (!styleText.isTransparentText())
+	// g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1f));
+	// g2.fill(s);
+	//
+	// }
+	//
+	// if (styleText.isUnderlined()) {
+	// Rectangle b = s.getBounds2D().getBounds();
+	// g2.setStroke(new BasicStroke());
+	// g2.drawLine(b.x, b.y + b.height, b.x + b.width, b.y + b.height);
+	// }
+	//
+	// }
+	//
+	// public static Rectangle2D.Double paint(StyleText styleText, Graphics2D graphics, boolean active, double
+	// zoomFactorX, double zoomFactorY, boolean zoomOn) {
+	// Graphics2D g2 = (Graphics2D) graphics.create();
+	// boolean zoomIt = (zoomOn && zoomFactorX > 1);
+	// double x = styleText.getLocation().x;
+	// double y = styleText.getLocation().y;
+	//
+	// // Falls gezoomt werden soll, dann wird der Ursprung auf den Nullpunkt des Textes gesetzt, damit beim zoomen
+	// // nicht auch x und y des Textes
+	// // beeinflusst werden, denn sonst würde die Position auch verschoben.
+	// if (zoomIt) {
+	// double sx = 1 / zoomFactorX;
+	// double sy = 1 / zoomFactorY;
+	// g2.translate(x, y);
+	// final AffineTransform at_zoom = new AffineTransform();
+	// at_zoom.setToScale(sx, sy);
+	// g2.transform(at_zoom);
+	// x = 0;
+	// y = 0;
+	// }
+	//
+	// g2.setStroke(new BasicStroke());
+	// RenderingTool.setRenderingForTextAndGrafic(g2);
+	// g2.setColor(ColorTool.toColor(active ? styleText.getActiveTextColor() : styleText.getTextFont().getColor()));
+	// g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, styleText.getBackTransparenz() / 100f));
+	// String txt = styleText.getText().translate();
+	// final GlyphVector glyphVector =
+	// g2.getFont().createGlyphVector(g2.getFontMetrics(g2.getFont()).getFontRenderContext(), txt);
+	//
+	// double theta = Math.toRadians(styleText.getRotation());
+	// g2.rotate(theta, x, y);
+	//
+	// int textHeight = g2.getFontMetrics().getHeight();
+	// Shape s = glyphVector.getOutline((float) x, (float) y + textHeight);
+	//
+	// Insets ins = styleText.getBorderInsets();
+	// Rectangle2D.Double box = new Rectangle2D.Double(x - ins.left, y - ins.bottom, s.getBounds().width + (ins.left +
+	// ins.right), s.getBounds().height + (ins.top + ins.bottom));
+	//
+	// if (styleText.getBorderType() == RStatics.STYLETEXT_BORDER_WITHOUT) {
+	// g2.fill(s);
+	// } else if (styleText.getBorderType() == RStatics.STYLETEXT_BORDER_CLOUD) {
+	// if (styleText.isWithOutsideBorder()) {
+	// g2.setStroke(new BasicStroke(styleText.getBorderSizeInside() + styleText.getBorderSizeOutside(),
+	// BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+	// g2.setColor(ColorTool.toColor(styleText.getBorderColor()));
+	// g2.draw(s);
+	// }
+	// g2.setStroke(new BasicStroke(styleText.getBorderSizeInside(), BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+	// g2.setColor(ColorTool.toColor(styleText.getBackColor()));
+	// g2.draw(s);
+	// g2.setColor(ColorTool.toColor(active ? styleText.getActiveTextColor() : styleText.getTextFont().getColor()));
+	// g2.setStroke(new BasicStroke());
+	// if (!styleText.isTransparentText())
+	// g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1f));
+	// g2.fill(s);
+	// } else if (styleText.getBorderType() == RStatics.STYLETEXT_BORDER_BOX) {
+	// g2.setColor(ColorTool.toColor(styleText.getBackColor()));
+	// g2.fillRect((int) box.getX(), (int) box.getY(), (int) box.getWidth(), (int) box.getHeight());
+	// if (styleText.isWithOutsideBorder()) {
+	// g2.setStroke(new BasicStroke(styleText.getBorderSizeOutside(), BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+	// g2.setColor(ColorTool.toColor(styleText.getBorderColor()));
+	// g2.drawRect((int) box.getX(), (int) box.getY(), (int) box.getWidth(), (int) box.getHeight());
+	// }
+	// g2.setColor(ColorTool.toColor(active ? styleText.getActiveTextColor() : styleText.getTextFont().getColor()));
+	// g2.setStroke(new BasicStroke());
+	// if (!styleText.isTransparentText())
+	// g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1f));
+	// g2.fill(s);
+	//
+	// } else if (styleText.getBorderType() == RStatics.STYLETEXT_BORDER_BOX_ROUND) {
+	// g2.setColor(ColorTool.toColor(styleText.getBackColor()));
+	// g2.fillRoundRect((int) box.getX(), (int) box.getY(), (int) box.getWidth(), (int) box.getHeight(),
+	// styleText.getRadius(), styleText.getRadius());
+	// if (styleText.isWithOutsideBorder()) {
+	// g2.setStroke(new BasicStroke(styleText.getBorderSizeOutside(), BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+	//
+	// g2.setColor(ColorTool.toColor(styleText.getBorderColor()));
+	// g2.drawRoundRect((int) box.getX(), (int) box.getY(), (int) box.getWidth(), (int) box.getHeight(),
+	// styleText.getRadius(), styleText.getRadius());
+	// }
+	// g2.setColor(ColorTool.toColor(active ? styleText.getActiveTextColor() : styleText.getTextFont().getColor()));
+	// g2.setStroke(new BasicStroke());
+	// if (!styleText.isTransparentText())
+	// g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1f));
+	// g2.fill(s);
+	//
+	// }
+	//
+	// if (styleText.isUnderlined()) {
+	// Rectangle b = s.getBounds2D().getBounds();
+	// g2.setStroke(new BasicStroke());
+	// g2.drawLine(b.x, b.y, b.x + b.width, b.y);
+	//
+	// }
+	//
+	// Rectangle2D.Double bounds = new Rectangle2D.Double(box.x, box.y, box.width, box.height);
+	// if (zoomIt) {
+	// bounds.setRect(bounds.getX(), bounds.getY(), (int) (bounds.getWidth() / zoomFactorX), (int) (bounds.getHeight() /
+	// zoomFactorY));
+	// bounds.setRect(styleText.getLocation().x, styleText.getLocation().y, bounds.getWidth(), bounds.getHeight());
+	// }
+	//
+	// return bounds;
+	// }
+
+	
+	public static void verticalSeparator(Canvas canvas, Paint paint, int x, int y, int h) {
+
+		// oben und links
+		paint.setColor(separator_bride);
+		canvas.drawLine(x, y, x + 1, y);
+		canvas.drawLine(x, y, x, y + (h - 1));
+
+		// //unten und rechts
+		paint.setColor(separator_dark);
+		canvas.drawLine(x, y + h, x + 1, y + h);
+		canvas.drawLine(x + 1, y, x + 1, y + h);
+	}
+	
+	public static void verticalSeparatorBig(Canvas canvas, Paint paint, int x, int y, int h) {
+
+		// oben und links
+		paint.setColor(separator_bride);
+		canvas.drawLine(x, y, x + 2, y, paint);
+		canvas.drawLine(x, y, x, y + (h - 1), paint);
+
+		// //mitte
+		paint.setColor(separator_medium);
+		canvas.drawLine(x + 1, y + 1, x + 1, y + (h - 1), paint);
+		//
+		// //unten und rechts
+		paint.setColor(separator_dark);
+		canvas.drawLine(x, y + h, x + 2, y + h, paint);
+		canvas.drawLine(x + 2, y, x + 2, y + h, paint);
+	}
+
+	public static void horizontalSeparatorBig(Canvas canvas, Paint paint, int x, int y, int w) {
+
+		// oben und links
+		paint.setColor(separator_bride);
+		canvas.drawLine(x, y - 1, x, y - 2, paint);
+		canvas.drawLine(x, y - 2, x + w, y - 2, paint);
+
+		// mitte
+		paint.setColor(separator_medium);
+		canvas.drawLine(x + 1, y - 1, x + w, y - 1, paint);
+
+		// unten und rechts
+		paint.setColor(separator_dark);
+		canvas.drawLine(x, y, x + w, y, paint);
+		canvas.drawLine(x + w, y, x + w, y - 2, paint);
+	}
+
+	// public static void horizontalSeparator(Graphics2D g2, int x, int y, int w, Color bride, Color medium, Color dark)
+	// {
+	//
+	// // oben und links
+	// g2.setColor(bride);
+	// g2.drawLine(x, y, x, y - 1);
+	// g2.drawLine(x, y - 1, x + w, y - 1);
+	//
+	// // unten und rechts
+	// g2.setColor(dark);
+	// g2.drawLine(x, y, x + w, y);
+	// g2.drawLine(x + w, y, x + w, y - 1);
+	// }
+	//
+
+}

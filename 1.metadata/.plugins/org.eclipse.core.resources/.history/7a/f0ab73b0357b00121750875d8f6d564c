@@ -1,0 +1,385 @@
+package de.bergwild.android.mobile;
+
+import java.util.ArrayList;
+
+import android.app.Activity;
+import android.content.Intent;
+import android.os.Bundle;
+import android.view.KeyEvent;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.WindowManager;
+import android.widget.EditText;
+import android.widget.ImageButton;
+import android.widget.LinearLayout;
+import android.widget.TextView;
+import de.bergwild.android.mobile.component.DoubleLineText;
+import de.bergwild.android.mobile.connection.OnlineConnection;
+import de.bergwild.android.mobile.connection.OnlineConnector;
+import de.bergwild.android.mobile.tools.ElementHandler;
+import de.bergwild.android.mobile.tools.Tags;
+import de.bergwild.android.util.Gui;
+import de.bergwild.android.util.Sort;
+import de.bergwild.android.util.component.BasisActivity;
+import de.bergwild.android.util.component.Feedback;
+import de.bergwild.android.util.interfaces.ResultObjectIF;
+import de.bergwild.android.util.task.AsyncInterminateInterface;
+import de.bergwild.android.util.task.AsyncProgressTask;
+import de.bw.mm.MStatics;
+import de.bw.mm.forum.MThread;
+import de.bw.mm.forum.MThreadGroup;
+
+public class ForumActivity extends BasisActivity {
+
+	private String bookIdent;
+	private LinearLayout layoutCommonContent;
+	private LinearLayout layoutChapterContent;
+	private LinearLayout layoutAuthorContent;
+	private LinearLayout layoutBottomLeft;
+	private LinearLayout layoutBottomRight;
+	private EditText searchText;
+	private DoubleLineText commonBut;
+
+	@Override
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		setContentView(R.layout.activity_forum);
+		setTitle("Bergwild - Forum");
+		bookIdent = getIntent().getStringExtra(Tags.BOOKIDENT);
+		this.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN);
+		layoutCommonContent = (LinearLayout) findViewById(R.id.ll_forum_common_content);
+		layoutChapterContent = (LinearLayout) findViewById(R.id.ll_forum_chapter_content);
+		layoutAuthorContent = (LinearLayout) findViewById(R.id.ll_forum_author_content);
+		layoutBottomLeft = (LinearLayout) findViewById(R.id.ll_forum_bottom_left);
+		layoutBottomRight = (LinearLayout) findViewById(R.id.ll_forum_bottom_right);
+
+		LinearLayout layoutCommonBut = (LinearLayout) findViewById(R.id.ll_forum_common_but);
+		commonBut = new DoubleLineText(this, "Allgemeine Themen zum Buch", "Nützliches und Informatives zum Inhalt des Buches", R.style.holo_ts_light_22_normal, R.style.holo_ts_light_14_normal, R.color.button_txt_dark, true);
+		commonBut.init();
+		layoutCommonBut.addView(commonBut);
+		commonBut.setOnClickListener(new View.OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				commonBut.click();
+				new AsyncProgressTask(ForumActivity.this, new LoadThreadGroups(MStatics.AREATYPE_COMMON, layoutCommonContent), "Lade Forenbeiträge", "", false).execute();
+			}
+		});
+
+		LinearLayout layoutChapterBut = (LinearLayout) findViewById(R.id.ll_forum_chapter_but);
+		final DoubleLineText chapterBut = new DoubleLineText(this, "Themen zu den Touren", "Bewertungen, Erfahrungen und nützliche Infos zu Touren", R.style.holo_ts_light_22_normal, R.style.holo_ts_light_14_normal, R.color.button_txt_dark, true);
+		chapterBut.init();
+		layoutChapterBut.addView(chapterBut);
+		chapterBut.setOnClickListener(new View.OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				chapterBut.click();
+				new AsyncProgressTask(ForumActivity.this, new LoadThreadGroups(MStatics.AREATYPE_CHAPTER, layoutChapterContent), "Lade Forenbeiträge", "", false).execute();
+			}
+		});
+
+		LinearLayout layoutAuthorBut = (LinearLayout) findViewById(R.id.ll_forum_author_but);
+		final DoubleLineText authorBut = new DoubleLineText(this, "Fragen an den Autor", "Fragen und Anregungen werden direkt vom Autor des Buches beantwortet", R.style.holo_ts_light_22_normal, R.style.holo_ts_light_14_normal,
+				R.color.button_txt_dark, true);
+		authorBut.init();
+		layoutAuthorBut.addView(authorBut);
+		authorBut.setOnClickListener(new View.OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				authorBut.click();
+				new AsyncProgressTask(ForumActivity.this, new LoadThreadGroups(MStatics.AREATYPE_AUTHOR, layoutAuthorContent), "Lade Forenbeiträge", "", false).execute();
+			}
+		});
+
+		TextView textView = Gui.getTextView(this, "Nach Inhalten suchen:", R.style.holo_ts_white_20_normal, 5);
+		layoutBottomLeft.addView(textView);
+
+		searchText = new EditText(this);
+		searchText.setSingleLine(true);
+		searchText.setMinHeight(50);
+		searchText.setHint("Suchbegriff");
+		layoutBottomLeft.addView(searchText);
+
+		searchText.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+			@Override
+			public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+				// 6 ist OK-taste
+				if (actionId == 6)
+					startSearch();
+				return false;
+			}
+		});
+
+		ImageButton searchBut = new ImageButton(this);
+		layoutBottomRight.addView(searchBut);
+		searchBut.setLayoutParams(new LinearLayout.LayoutParams(60, 50));
+		searchBut.setImageResource(R.drawable.icon_search);
+		searchBut.setBackgroundResource(R.drawable.holo_back_button_dark_3);
+
+		searchBut.setPadding(8, 7, 8, 7);
+		searchText.clearFocus();
+		commonBut.requestFocus();
+		searchBut.setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				startSearch();
+			}
+		});
+
+		new AsyncProgressTask(ForumActivity.this, new LoadNewestThreads(), "Suche aktuelle Beiträge", "", false).execute();
+	}
+
+	protected void startSearch() {
+		String bookIdent = ElementHandler.fac().getBook().getForumBookIdent();
+		final String txt = searchText.getText().toString();
+		if (txt.length() < 3)
+			Feedback.showInfo(ForumActivity.this, "Ungültige Eingabe", "Bitte geben Sie bitte einen Suchbergriff ein. (min. 3 Zeichen)", null);
+		else
+			new AsyncProgressTask(ForumActivity.this, new StartSearch(bookIdent, txt), "Suche Forenbeiträge", "", false).execute();
+
+	}
+
+	class StartSearch extends AsyncInterminateInterface {
+
+		private String bookIdent;
+		private String txt;
+
+		public StartSearch(String bookIdent, String txt) {
+			super();
+			this.bookIdent = bookIdent;
+			this.txt = txt;
+		}
+
+		@Override
+		public void taskFinishedNormaly(AsyncProgressTask task) {
+		}
+
+		@Override
+		public void taskCanceld(AsyncProgressTask task) {
+		}
+
+		@Override
+		public void doInBackground(String... params) {
+			OnlineConnector.fac().searchInForum(txt, bookIdent, new ResultObjectIF() {
+				@Override
+				public void sentResult(Object object, int errorcode) {
+					getTask().dismiss();
+					showSearchResults(object, errorcode, txt);
+				}
+			});
+		}
+	}
+
+	private void showSearchResults(final Object object, final int errorcode, final String txt) {
+		runOnUiThread(new Runnable() {
+			@Override
+			public void run() {
+
+				if (errorcode == OnlineConnection.OK) {
+					@SuppressWarnings("unchecked")
+					ArrayList<MThread> threads = (ArrayList<MThread>) object;
+
+					if (threads.size() == 0) {
+						showNothingFound();
+					} else {
+						ForumSearchActivity.threads = threads;
+						Intent intent = new Intent(ForumActivity.this, ForumSearchActivity.class);
+						intent.putExtra(Tags.SEARCHTITEL, "Suchergebnisse für: " + txt);
+						ForumActivity.this.startActivity(intent);
+					}
+
+				} else if (errorcode == OnlineConnection.NO_CONTENT_FOUND)
+					showNothingFound();
+				else if (errorcode == OnlineConnection.ERROR_NOCONNECTION_TOSERVER || errorcode == OnlineConnection.ERROR)
+					showConnectionError();
+
+			}
+		});
+
+	}
+
+	protected void showNothingFound() {
+		ForumActivity.this.runOnUiThread(new Runnable() {
+			@Override
+			public void run() {
+				Feedback.showInfo(ForumActivity.this, "Nichts gefunden", "Mit diesem Suchbegriff konnten keine Forenbeiträge gefunden werden.", null, Feedback.INFO_TYPE_INFO);
+			}
+		});
+
+	}
+
+	@Override
+	protected void onResume() {
+		// TODO Auto-generated method stub
+		super.onResume();
+		searchText.clearFocus();
+		commonBut.requestFocus();
+	}
+
+	class LoadThreadGroups extends AsyncInterminateInterface {
+
+		private final String areaType;
+		private LinearLayout layout;
+
+		public LoadThreadGroups(String areaType, LinearLayout layout) {
+			super();
+			this.areaType = areaType;
+			this.layout = layout;
+		}
+
+		@Override
+		public void taskFinishedNormaly(AsyncProgressTask task) {
+		}
+
+		@Override
+		public void taskCanceld(AsyncProgressTask task) {
+		}
+
+		@Override
+		public void doInBackground(String... params) {
+			OnlineConnector.fac().getThreadGroups(areaType, bookIdent, ElementHandler.LANG, new ResultObjectIF() {
+				@Override
+				public void sentResult(Object object, int errorcode) {
+					getTask().dismiss();
+					if (errorcode == OnlineConnection.OK) {
+						@SuppressWarnings("unchecked")
+						ArrayList<MThreadGroup> groups = (ArrayList<MThreadGroup>) object;
+						Sort.sortAlphabetical(groups, true);
+						addGroups(getAreaText(areaType), groups, layout);
+					} else
+						showConnectionError();
+				}
+
+			});
+		}
+	}
+
+	private String getAreaText(String areatype) {
+		if (areatype.equalsIgnoreCase(MStatics.AREATYPE_COMMON))
+			return "Allgemeine Themen";
+		if (areatype.equalsIgnoreCase(MStatics.AREATYPE_AUTHOR))
+			return "Fragen an Autor";
+		if (areatype.equalsIgnoreCase(MStatics.AREATYPE_CHAPTER))
+			return "Themen zu den Touren";
+
+		return "";
+	}
+
+	private void addGroups(final String areaText, final ArrayList<MThreadGroup> groups, final LinearLayout layout) {
+		ForumActivity.this.runOnUiThread(new Runnable() {
+			@Override
+			public void run() {
+				removeAllContentViews();
+				for (MThreadGroup group : groups) {
+					GroupButton button = getGroupButton(areaText, group);
+					layout.addView(button);
+				}
+			}
+		});
+
+	}
+
+	private void removeAllContentViews() {
+		layoutCommonContent.removeAllViews();
+		layoutChapterContent.removeAllViews();
+		layoutAuthorContent.removeAllViews();
+	}
+
+	private GroupButton getGroupButton(String areaText, MThreadGroup group) {
+		GroupButton but = new GroupButton(ForumActivity.this, group.getTitle(), null, R.style.holo_ts_white_16_normal, R.style.holo_ts_white_14_normal, R.color.button_txt_dark);
+		but.setAreaText(areaText);
+		but.setGroup(group);
+		return but;
+	}
+
+	private void showConnectionError() {
+		ForumActivity.this.runOnUiThread(new Runnable() {
+			@Override
+			public void run() {
+				Feedback.showInfo(ForumActivity.this, "Fehler", "Die Forenbeiträge konnten nicht geladen werden. Eventuell steht keine Internetverbindung zur Verfügung.", null, Feedback.INFO_TYPE_INFO);
+			}
+		});
+	}
+
+	class GroupButton extends DoubleLineText {
+
+		private MThreadGroup group;
+		private String areaText = "";
+
+		public GroupButton(Activity context, String bigText, String smallText, int bigTextStyle, int smallTextStyle, int activeColor) {
+			super(context, bigText, smallText, bigTextStyle, smallTextStyle, activeColor, true);
+			setPadding(30, 5, 10, 5);
+			setDivColor(context.getResources().getColor(R.color.holo_gray_button));
+			init();
+
+			setOnClickListener(new View.OnClickListener() {
+				@Override
+				public void onClick(View v) {
+					click();
+					ThreadGroupActivity.currentGroup = group;
+					Intent intent = new Intent(ForumActivity.this, ThreadGroupActivity.class);
+					intent.putExtra(Tags.THREADGROUPTITEL, areaText + ": " + group.getTitle());
+					ForumActivity.this.startActivity(intent);
+
+				}
+			});
+
+		}
+
+		public void setAreaText(String areaText) {
+			this.areaText = areaText;
+		}
+
+		public void setGroup(MThreadGroup group) {
+			this.group = group;
+		}
+
+		public MThreadGroup getGroup() {
+			return group;
+		}
+
+	}
+
+	class LoadNewestThreads extends AsyncInterminateInterface {
+
+		@Override
+		public void taskFinishedNormaly(AsyncProgressTask task) {
+		}
+
+		@Override
+		public void taskCanceld(AsyncProgressTask task) {
+		}
+
+		@Override
+		public void doInBackground(String... params) {
+
+			String bookIdent = ElementHandler.fac().getBook().getForumBookIdent();
+			OnlineConnector.fac().getNewestThreads(3, bookIdent, ElementHandler.LANG, new ResultObjectIF() {
+				@Override
+				public void sentResult(Object object, int errorcode) {
+					getTask().dismiss();
+					if (errorcode == OnlineConnection.OK) {
+
+					} else
+						showConnectionError();
+				}
+
+			});
+
+			// OnlineConnector.fac().getThreadGroups(areaType, bookIdent, ElementHandler.LANG, new ResultObjectIF() {
+			// @Override
+			// public void sentResult(Object object, int errorcode) {
+			// getTask().dismiss();
+			// if (errorcode == OnlineConnection.OK) {
+			// @SuppressWarnings("unchecked")
+			// ArrayList<MThreadGroup> groups = (ArrayList<MThreadGroup>) object;
+			// Sort.sortAlphabetical(groups, true);
+			// addGroups(getAreaText(areaType), groups, layout);
+			// } else
+			// showConnectionError();
+			// }
+			//
+			// });
+		}
+	}
+
+}

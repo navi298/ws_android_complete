@@ -1,0 +1,132 @@
+package de.bergwild.android.mobile;
+
+import java.util.ArrayList;
+
+import android.content.Context;
+import android.os.Bundle;
+import android.view.View;
+import android.widget.Button;
+import android.widget.LinearLayout;
+import android.widget.ScrollView;
+import android.widget.TableRow;
+import android.widget.TextView;
+import de.bergwild.android.mobile.connection.LocalConnector;
+import de.bergwild.android.mobile.views.BookView;
+import de.bergwild.android.util.FileUtil;
+import de.bergwild.android.util.component.BasisActivity;
+import de.bw.mm.basis.MBookReport;
+import de.bw.mm.basis.MElement;
+
+public class LibraryActivity extends BasisActivity {
+
+	@Override
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		LibraryView libraryView = new LibraryView(this);
+		setContentView(libraryView);
+	}
+
+	public class LibraryView extends LinearLayout {
+
+		private Context context;
+		private LinearLayout bookLayout;
+
+		public LibraryView(final Context context) {
+			super(context);
+			this.context = context;
+
+			setOrientation(LinearLayout.VERTICAL);
+			setLayoutParams(new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
+
+			LinearLayout header = new LinearLayout(context);
+			header.setLayoutParams(new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
+			header.setOrientation(LinearLayout.HORIZONTAL);
+
+			Button newNoteButton = new Button(context);
+			newNoteButton.setText("Taste 1");
+			newNoteButton.setLayoutParams(new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT));
+			header.addView(newNoteButton);
+			newNoteButton.setOnClickListener(new OnClickListener() {
+				@Override
+				public void onClick(View v) {
+
+					// Feedback.insertString(context, context.getResources().getString(R.string.txt_insertname), "",
+					// false, new NewNoteResult());
+				}
+			});
+
+			TextView glue = new TextView(context);
+			glue.setLayoutParams(new TableRow.LayoutParams(0, LayoutParams.WRAP_CONTENT, 1f));
+			header.addView(glue);
+
+			Button changeChapterButton = new Button(context);
+
+			changeChapterButton.setLayoutParams(new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT));
+			changeChapterButton.setText("Taste 2");
+			header.addView(changeChapterButton);
+			addView(header);
+			changeChapterButton.setOnClickListener(new OnClickListener() {
+				@Override
+				public void onClick(View v) {
+
+				}
+			});
+			bookLayout = new LinearLayout(context);
+			bookLayout.setLayoutParams(new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
+			bookLayout.setOrientation(LinearLayout.VERTICAL);
+
+			ScrollView scroll = new ScrollView(context);
+			scroll.addView(bookLayout);
+			addView(scroll);
+
+			loadBooks();
+		}
+
+		// class NewNoteResult implements ResultStringIF {
+		//
+		// @Override
+		// public void sentResult(String name) {
+		// if (name != null && name.length() > 0) {
+		// String time = TimeUitil.getTimeDate(context.getResources().getString(R.string.time_format));
+		// CNote note = new CNote(name, time);
+		// chapter.getNotes().add(note);
+		// addNoteToLayout(note);
+		// ElementHandler.fac().saveBook();
+		// }
+		// }
+		// }
+
+		private void loadBooks() {
+
+			ArrayList<MBookReport> bookReports = LocalConnector.fac().getBookReports();
+			bookLayout.removeAllViews();
+			for (MBookReport report : bookReports) {
+				MElement element = report.getElement(report.getBookUid());
+				FileUtil.loadObject(dir, file)
+
+				BookView eView = new BookView(context, report);
+
+				bookLayout.addView(eView);
+			}
+		}
+
+		private void addNoteToLayout(MBookReport report) {
+
+		}
+
+		// class Separator extends View {
+		// public Separator(Context context) {
+		// super(context);
+		// setMinimumHeight(5);
+		// }
+		// }
+
+		// public void removeNote(NoteView noteView) {
+		// noteLayout.removeView(noteView);
+		// chapter.getNotes().remove(noteView.getNote());
+		// ElementHandler.fac().saveBook();
+		// }
+
+	}
+
+}

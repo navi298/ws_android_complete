@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget31"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:background="@color/holo_audioshow_chapter" >
+
+    <LinearLayout
+        android:id="@+id/ll_audioshow_bottom"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content" >
+    </LinearLayout>
+
+    <ScrollView
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        android:id="@+id/sc_audioshow_scroll"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/holo_gray_dark"
+        android:orientation="vertical" >
+
+        <LinearLayout
+            android:id="@+id/ll_audioshow_content"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical" >
+        </LinearLayout>
+    </ScrollView>
+
+    <RelativeLayout
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent" >
+
+        <LinearLayout
+            android:id="@+id/ll_audioshow_controller"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:layout_alignParentBottom="true"
+            android:orientation="horizontal" >
+        </LinearLayout>
+    </RelativeLayout>
+
+</FrameLayout> <!-- android:drawableLeft="@drawable/holo_but_selector_audio_play" -->

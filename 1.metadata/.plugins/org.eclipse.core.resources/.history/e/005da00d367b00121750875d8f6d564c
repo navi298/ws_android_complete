@@ -1,0 +1,54 @@
+package de.bergwild.android.mobile.connection;
+
+import de.bergwild.android.util.interfaces.ResultObjectIF;
+import de.bw.mm.basis.MBookReport;
+import de.bw.mm.basis.MVersion;
+import de.bw.mm.forum.MAnswer;
+import de.bw.mm.forum.MEntry;
+import de.bw.mm.forum.MThread;
+import de.bw.mm.forum.MThreadGroup;
+
+public interface OnlineConnection {
+	public static final int OK = 0;
+	public static final int ERROR_NOCONNECTION_TOSERVER = 10;
+	public static final int ERROR = 20;
+	public static final int NO_CONTENT_FOUND = 30;
+
+	public void getUser(String username, ResultObjectIF resultIF);
+
+	public void getBookLinks(String useruid, ResultObjectIF resultIF);
+
+	public MBookReport getReport(MVersion version);
+
+	public MVersion getVersion(String bookUid, String language, int device);
+
+	public boolean saveObject(String urlStr, String targetPath, ResultObjectIF progressIF);
+
+	public void cancelUploadDownload();
+
+	// Forum-Methoden
+	public void setThreadGroup(MThreadGroup tGroup, ResultObjectIF resultIF);
+
+	public void setThread(MThread thread, ResultObjectIF resultIF);
+
+	public void setEntry(MEntry entry, ResultObjectIF resultIF);
+
+	public void setAnswer(MAnswer answer, ResultObjectIF resultIF);
+
+	public void getThreadGroups(String areaType, String bookIdent, String lang, ResultObjectIF resultIF);
+
+	public void getThreads(String groupUid, ResultObjectIF resultIF);
+
+	public void getEntrys(String threadUid, ResultObjectIF resultIF, boolean filled);
+
+	public void getAnswers(String entryUid, ResultObjectIF resultIF);
+
+	public void getThreadsByIdent(String ident, ResultObjectIF resultIF);
+
+	public void getThreadGroupsByIdent(String ident, String bookIdent, ResultObjectIF resultIF);
+
+	public void searchInForum(String searchTxt, String bookIdent, ResultObjectIF resultIF);
+
+	public void getNewestThreads(int number, String bookIdent, String lang, ResultObjectIF resultIF);
+
+}

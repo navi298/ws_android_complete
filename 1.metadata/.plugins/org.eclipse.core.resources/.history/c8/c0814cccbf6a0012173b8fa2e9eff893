@@ -1,0 +1,155 @@
+package de.bergwild.android.mobile.document;
+
+import android.graphics.Color;
+import android.text.SpannableString;
+import android.text.method.LinkMovementMethod;
+import android.view.Gravity;
+import android.view.MotionEvent;
+import android.view.SoundEffectConstants;
+import android.view.View;
+import android.widget.FrameLayout;
+import android.widget.LinearLayout;
+import android.widget.ImageView.ScaleType;
+import android.widget.TextView;
+import de.bergwild.android.mobile.component.SingleImageView;
+import de.bergwild.android.mobile.interfaces.EventInterface;
+import de.bergwild.android.mobile.tools.ColorTool;
+import de.bergwild.android.mobile.tools.ElementHandler;
+import de.bergwild.android.util.component.BasisActivity;
+import de.bw.mm.MStatics;
+import de.bw.mm.basis.MBookReport;
+import de.bw.mm.basis.MRectangle;
+import de.bw.mm.doc.MDocElement;
+import de.bw.mm.doc.MDocGeo;
+import de.bw.mm.doc.MDocGrafic;
+import de.bw.mm.doc.MDocText;
+import de.bw.mm.doc.MHyperlink;
+import de.bw.mm.doc.MTA;
+
+public class PageBuilder {
+	int SIZE_CORRECTION = 1;
+
+	private MBookReport report;
+	private BasisActivity context;
+
+	private DocInterface docInterface;
+
+	public PageBuilder(MBookReport report, BasisActivity context, DocInterface docInterface) {
+		super();
+		this.report = report;
+		this.context = context;
+		this.docInterface = docInterface;
+	}
+
+	public View buildView(BasisActivity context, MDocElement element) {
+		if (element instanceof MDocText)
+			return buildTextView(context, (MDocText) element);
+		else if (element instanceof MDocGrafic)
+			return buildImageView(context, (MDocGrafic) element);
+		else if (element instanceof MDocGeo)
+			return buildGeoView(context, (MDocGeo) element);
+
+		return null;
+	}
+
+	private View buildGeoView(BasisActivity context, MDocGeo docGeo) {
+
+		DocSurround docSurround = new DocSurround(context, docGeo, null);
+
+		
+//		docSurround.setBackgroundColor(Color.GREEN);
+		return docSurround;
+	}
+
+	private View buildTextView(BasisActivity context, MDocText text) {
+		TextView view = new TextView(context);
+
+		SpannableString string = new SpannableString(text.getText().getTxt());
+
+		switch (text.getText().getAlign()) {
+		case MStatics.POSITION_LEFT:
+			view.setGravity(Gravity.LEFT);
+			break;
+		case MStatics.POSITION_RIGHT:
+			view.setGravity(Gravity.RIGHT);
+			break;
+		case MStatics.POSITION_CENTER:
+			view.setGravity(Gravity.CENTER);
+			break;
+		case MStatics.POSITION_JUSTIFIED:
+			// Wird von Android nicht unterstützt.
+			break;
+		}
+
+		if (text.getText().getHyperlinks() != null)
+			for (MHyperlink hyperlink : text.getText().getHyperlinks())
+				ColorTool.addHyperlinkSpan(view, hyperlink, string, text.getText().getTxt(), context, report);
+
+		for (String mtaString : text.getText().getAttributes()) {
+			MTA mta = MTA.toMTextAttribute(mtaString);
+			ColorTool.addColorSpan(mta, string);
+			ColorTool.addSizeSpan(mta, string, SIZE_CORRECTION);
+			ColorTool.addUnderlineSpan(mta, string);
+		}
+
+		view.setMovementMethod(LinkMovementMethod.getInstance());
+		view.setText(string);
+		/**Später noch einbauen, aber nur wenn kein ScrollView drum ist. beim Seitenbau die Größen prüfen**/
+//		view.setOnTouchListener(new MoveTurnOverListener(docInterface, null));
+		view.setPadding(5, 0, 5, 0);
+
+		return new DocSurround(context, text, view);
+	}
+
+	private View buildImageView(BasisActivity context, MDocGrafic grafic) {
+
+		ScaleType zoom = ScaleType.CENTER;
+		switch (grafic.getGrafic().getZoom()) {
+		case MStatics.ZOOM_EXACT:
+			zoom = ScaleType.FIT_XY;
+			break;
+		case MStatics.ZOOM_TO_FILL:
+			zoom = ScaleType.CENTER_CROP;
+			break;
+		case MStatics.ZOOM_TO_FIT:
+			zoom = ScaleType.CENTER_INSIDE;
+			break;
+		}
+
+		SingleImageView imageView = new SingleImageView(context, SingleImageView.TYPE_SHOW_HD, zoom);
+		imageView.setImage(grafic.getGrafic(), report, ElementHandler.mediaSize);
+		
+		/**Später noch einbauen, aber nur wenn kein ScrollView drum ist. beim Seitenbau die Größen prüfen**/
+//		imageView.setOnTouchListener(new MoveTurnOverListener(docInterface, new ImageAction(imageView)));
+
+		return new DocSurround(context, grafic, imageView);
+
+	}
+
+	class ImageAction implements EventInterface {
+		private SingleImageView imageView;
+
+		public ImageAction(SingleImageView imageView) {
+			super();
+			this.imageView = imageView;
+		}
+
+		@Override
+		public void onTouch(View v, MotionEvent event) {
+			if (event.getAction() == MotionEvent.ACTION_UP) {
+				imageView.playSoundEffect(SoundEffectConstants.CLICK);
+				imageView.clicked();
+			}
+		}
+
+	}
+
+}
+
+// TextView textView = (TextView) findViewById(R.id.textview);
+// SpannableString ss = new SpannableString("abc");
+// Drawable d = getResources().getDrawable(R.drawable.icon32);
+// d.setBounds(0, 0, d.getIntrinsicWidth(), d.getIntrinsicHeight());
+// ImageSpan span = new ImageSpan(d, ImageSpan.ALIGN_BASELINE);
+// ss.setSpan(span, 0, 3, Spannable.SPAN_INCLUSIVE_EXCLUSIVE);
+// textView.setText(ss); 

@@ -1,0 +1,228 @@
+package de.bergwild.android.mobile.connection;
+
+import java.io.File;
+import java.util.ArrayList;
+
+import de.bergwild.android.mobile.tools.Downloader;
+import de.bergwild.android.mobile.tools.ElementHandler;
+import de.bergwild.android.mobile.tools.Statics;
+import de.bergwild.android.util.interfaces.ResultObjectIF;
+import de.bw.mm.MStatics;
+import de.bw.mm.basis.MBookReport;
+import de.bw.mm.basis.MVersion;
+import de.bw.mm.forum.MAnswer;
+import de.bw.mm.forum.MEntry;
+import de.bw.mm.forum.MThread;
+import de.bw.mm.forum.MThreadGroup;
+
+/**
+ * ACHTUNG WICHTIG:
+ * 
+ * Netzwerkverbindungen dürfen nicht im UI-Thread gemacht werden. Und da nicht immer sicher ist, bzw es ein enormer
+ * Aufwand ist in der GUI sicherzustellen, das alles aus einem anderen Thread gestartet wird, gibt es Methoden die
+ * nochmal alles in ein Runnable packen und per Interface die Daten zurücklifern.
+ * 
+ * Manache Methoden tun dies nicht. Deshalb muss bei der Verwendung dieser Methoden über den OnlineConnector
+ * sichergestellt werden, dass die Sache im UIThread läuft.
+ **/
+
+public class OnlinePHPConnection implements OnlineConnection {
+
+	private Downloader downloader = new Downloader();
+
+	@Override
+	public void getUser(final String username, final ResultObjectIF resultIF) {
+
+		new Thread(new Runnable() {
+			public void run() {
+				PHPUserTool.getUser(username, resultIF);
+			}
+		}).start();
+	}
+
+	@Override
+	public void getBookLinks(final String useruid, final ResultObjectIF resultIF) {
+
+		new Thread(new Runnable() {
+			public void run() {
+				PHPUserTool.getBookLinks(useruid, resultIF);
+			}
+		}).start();
+
+	}
+
+	@Override
+	public MBookReport getReport(MVersion version) {
+		boolean xmlConnection = LocalConnector.fac().isXMLConnection();
+		String reportFile = (xmlConnection ? MStatics.FILE_REPORT_XML : MStatics.FILE_REPORT_OBJ);
+
+		String url = "http://" + ElementHandler.host + File.separator + Statics.DIR_MOBILEDATA + File.separator;
+		url += version.getLanguage() + File.separator + MStatics.toDeviceDirectory(version.getDevice()) + File.separator;
+		url += MStatics.toFormatDirectory(xmlConnection) + File.separator + version.getBookUid() + File.separator + reportFile;
+
+		Object obj = downloader.loadOnlineObject(url);
+		if (obj != null && obj instanceof MBookReport)
+			return (MBookReport) obj;
+
+		return null;
+	}
+
+	@Override
+	public boolean saveObject(String urlStr, String targetPath, ResultObjectIF progressIF) {
+
+		// Kanns downloaden, bei den Topomaps aber auch ohne Filegröße
+		// return Downloader.saveObject1(urlStr, targetPath, progressIF);
+
+		// Kanns downloaden, hat aber nur einen groben Progress, der nicht wirklich passt.
+		// return Downloader.saveObject3(urlStr, targetPath, progressIF);
+
+		// Kanns downloaden, bei den Topomaps aber auch ohne Filegröße
+		// return Downloader.saveObject4(urlStr, targetPath, progressIF);
+
+		// Kanns downloaden, bei den Topomaps aber auch ohne Filegröße
+		// return Downloader.saveObject5(urlStr, targetPath, progressIF);
+
+		// Kanns downloaden und die Filegröße ermitteln // nur hier ist canceld eingebaut worden.
+		return downloader.saveObject6(urlStr, targetPath, progressIF);
+
+	}
+
+	@Override
+	public MVersion getVersion(String bookUid, String language, int device) {
+		boolean xmlConnection = LocalConnector.fac().isXMLConnection();
+		String reportFile = (xmlConnection ? MStatics.FILE_VERSION_XML : MStatics.FILE_VERSION_OBJ);
+
+		String url = "http://" + ElementHandler.host + File.separator + Statics.DIR_MOBILEDATA + File.separator;
+		url += language + File.separator + MStatics.toDeviceDirectory(device) + File.separator;
+		url += MStatics.toFormatDirectory(xmlConnection) + File.separator + bookUid + File.separator + reportFile;
+
+		Object obj = downloader.loadOnlineObject(url);
+		if (obj != null && obj instanceof MVersion)
+			return (MVersion) obj;
+
+		return null;
+	}
+
+	@Override
+	public void cancelUploadDownload() {
+		downloader.cancel();
+	}
+
+	// Methoden für das Forum --------------------------------------------------
+
+	@Override
+	public void setThreadGroup(final MThreadGroup tGroup, final ResultObjectIF resultIF) {
+		new Thread(new Runnable() {
+			public void run() {
+				PHPForumTool.setThreadGroup(tGroup, resultIF);
+			}
+		}).start();
+
+	}
+
+	@Override
+	public void setThread(final MThread thread, final ResultObjectIF resultIF) {
+		new Thread(new Runnable() {
+			public void run() {
+				PHPForumTool.setThread(thread, resultIF);
+			}
+		}).start();
+
+	}
+
+	@Override
+	public void setEntry(final MEntry entry, final ResultObjectIF resultIF) {
+		new Thread(new Runnable() {
+			public void run() {
+				PHPForumTool.setEntry(entry, resultIF);
+			}
+		}).start();
+
+	}
+
+	@Override
+	public void setAnswer(final MAnswer answer, final ResultObjectIF resultIF) {
+		new Thread(new Runnable() {
+			public void run() {
+				PHPForumTool.setAnswer(answer, resultIF);
+			}
+		}).start();
+	}
+
+	@Override
+	public void getThreadGroups(final String areaType, final String bookIdent, final String lang, final ResultObjectIF resultIF) {
+		new Thread(new Runnable() {
+			public void run() {
+				PHPForumTool.getThreadGroups(areaType, bookIdent, lang, resultIF);
+			}
+		}).start();
+	}
+
+	@Override
+	public void getThreads(final String groupUid, final ResultObjectIF resultIF) {
+		new Thread(new Runnable() {
+			public void run() {
+				PHPForumTool.getThreads(groupUid, resultIF);
+			}
+		}).start();
+
+	}
+
+	@Override
+	public void getEntrys(final String threadUid, final ResultObjectIF resultIF, final boolean filled) {
+		new Thread(new Runnable() {
+			public void run() {
+				PHPForumTool.getEntrys(threadUid, resultIF, filled);
+			}
+		}).start();
+	}
+
+	@Override
+	public void getAnswers(final String entryUid, final ResultObjectIF resultIF) {
+		new Thread(new Runnable() {
+			public void run() {
+				PHPForumTool.getAnswers(entryUid, resultIF);
+			}
+		}).start();
+	}
+
+	@Override
+	public void getThreadsByIdent(final String ident, final ResultObjectIF resultIF) {
+		new Thread(new Runnable() {
+			public void run() {
+				PHPForumTool.getThreadsByIdent(ident, resultIF);
+			}
+		}).start();
+
+	}
+
+	@Override
+	public void getThreadGroupsByIdent(final String ident, final String bookIdent, final ResultObjectIF resultIF) {
+		new Thread(new Runnable() {
+			public void run() {
+				PHPForumTool.getThreadGroupsByIdent(ident, bookIdent, resultIF);
+			}
+		}).start();
+	}
+
+	@Override
+	public void searchInForum(final String searchTxt, final String bookIdent, final ResultObjectIF resultIF) {
+		new Thread(new Runnable() {
+			public void run() {
+				PHPForumTool.searchInForum(searchTxt, bookIdent, resultIF);
+			}
+		}).start();
+		
+	}
+
+	@Override
+	public void getNewestThreads(final int number, final String bookIdent, final String lang, final ResultObjectIF resultIF) {
+		new Thread(new Runnable() {
+			public void run() {
+				PHPForumTool.getNewestThreads(number, bookIdent, lang, resultIF);
+			}
+		}).start();
+		
+	}
+
+}

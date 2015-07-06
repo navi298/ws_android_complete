@@ -1,0 +1,240 @@
+package de.bergwild.android.mobile.audio;
+
+import java.io.File;
+import java.util.ArrayList;
+
+import android.app.Notification;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
+import android.app.Service;
+import android.content.Context;
+import android.content.Intent;
+import android.media.MediaPlayer;
+import android.net.Uri;
+import android.os.Binder;
+import android.os.Handler;
+import android.os.IBinder;
+import android.view.View;
+import android.widget.SeekBar;
+import de.bergwild.android.mobile.AudioshowActivity;
+import de.bergwild.android.mobile.R;
+import de.bergwild.android.mobile.tools.Out;
+import de.bw.mm.MMedia;
+
+public class AudioService extends Service {
+	public static boolean curentlyRunning = false;
+
+	public static String ACTION_BROADCAST = "de.bergwild.android.mobile.service.BROADCAST_AUDIOSERVICE";
+	// public static final int BROADCASTTYPE_DURATION = 1;
+	public static final int BROADCASTTYPE_PROGRESS = 2;
+	public static final int BROADCASTTYPE_FINISHED = 3;
+
+	public static final String TAG_MEDIAID = "mediaid";
+	public static final String TAG_BROADCASTTYPE = "type";
+	public static final String TAG_DURATION = "duration";
+	public static final String TAG_PROGRESS = "progress";
+	private final Handler handler = new Handler();
+	private final IBinder mBinder = new LocalBinder();
+	private MediaPlayer mediaPlayer;
+
+	private String playingChapterUid;
+	// private int duration = 1;
+	private int currentIndex;
+	private ArrayList<MMedia> audioTracks;
+	private MMedia currentMedia;
+	private Runnable progressNotification;
+	private NotificationManager mNotifyManager;
+	/**
+	 * Wenn die Activity erneut sichtbar wird und dadurch den Service nochmal bindet, dann wird hier onCreate() nicht
+	 * wiederholt aufgerufen. Wohl aber die Methode onServiceConnected() in der Activity
+	 **/
+	@Override
+	public void onCreate() {
+		super.onCreate();
+		curentlyRunning = true;
+		Out.s("### AudioService onCreate");
+
+		// manager = (LocationManager) getSystemService(LOCATION_SERVICE);
+		// manager.requestLocationUpdates(LocationManager.GPS_PROVIDER, intervallMs, 0, locListener);
+	}
+
+	@Override
+	public void onDestroy() {
+		super.onDestroy();
+		Out.s("### GPSService onDestroy");
+		stopPlayer();
+		curentlyRunning = false;
+		// manager.removeUpdates(locListener);
+	}
+
+	@Override
+	public IBinder onBind(Intent intent) {
+		// trackname = intent.getExtras().getString(TAG_TRACKNAME);
+		// String filepath = intent.getExtras().getString(TAG_TRACKFILEPATH);
+		//
+		// if (filepath != null && filepath.length() > 0)
+		// trackFile = new File(filepath);
+
+		Out.s("### GPSService onBind");
+
+		return mBinder;
+	}
+
+	public void startPlayProgressUpdater() {
+		sendProgressBroadcast(mediaPlayer.getCurrentPosition(), mediaPlayer.getDuration(), currentMedia.getId());
+
+		if (mediaPlayer.isPlaying()) {
+			progressNotification = new Runnable() {
+				public void run() {
+					startPlayProgressUpdater();
+				}
+			};
+			handler.postDelayed(progressNotification, 1000);
+		} else {
+			pause();
+		}
+	}
+
+	// This is event handler thumb moving event
+	public void seekChange(View v) {
+		if (mediaPlayer.isPlaying()) {
+			SeekBar sb = (SeekBar) v;
+			mediaPlayer.seekTo(sb.getProgress());
+		}
+	}
+
+	public class LocalBinder extends Binder {
+		public AudioService getService() {
+			return AudioService.this;
+		}
+	}
+
+	public void sendProgressBroadcast(int progress, int duration, long mediaId) {
+		final Intent broadcastIntent = new Intent(ACTION_BROADCAST);
+		broadcastIntent.putExtra(TAG_BROADCASTTYPE, BROADCASTTYPE_PROGRESS);
+		broadcastIntent.putExtra(TAG_PROGRESS, progress);
+		broadcastIntent.putExtra(TAG_DURATION, duration);
+		broadcastIntent.putExtra(TAG_MEDIAID, mediaId);
+		getApplicationContext().sendBroadcast(broadcastIntent);
+	}
+
+	public void sendFinishedBroadcast() {
+		final Intent broadcastIntent = new Intent(ACTION_BROADCAST);
+		broadcastIntent.putExtra(TAG_BROADCASTTYPE, BROADCASTTYPE_FINISHED);
+		getApplicationContext().sendBroadcast(broadcastIntent);
+	}
+
+	public void switchPlayPause() {
+		try {
+			boolean playing = mediaPlayer != null && mediaPlayer.isPlaying();
+			if (playing)
+				pause();
+			else
+				play();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
+	private void pause() {
+		if (mediaPlayer != null)
+			mediaPlayer.pause();
+	}
+
+	private void play() {
+		if (mediaPlayer != null) {
+			sendProgressBroadcast(mediaPlayer.getCurrentPosition(), mediaPlayer.getDuration(), currentMedia.getId());
+			mediaPlayer.start();
+			startPlayProgressUpdater();
+		}
+	}
+
+	public void setTracks(ArrayList<MMedia> audioTracks, int trackIndex) {
+		this.audioTracks = audioTracks;
+		play(trackIndex);
+	}
+
+	private void generatePlayer() {
+		try {
+			stopPlayer();
+			if (audioTracks.size() <= 0 || currentIndex >= audioTracks.size())
+				return;
+
+			currentMedia = audioTracks.get(currentIndex);
+			String path = currentMedia.getPath();
+			Uri uri = Uri.fromFile(new File(path));
+			mediaPlayer = MediaPlayer.create(this, uri);
+			mediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
+				@Override
+				public void onCompletion(MediaPlayer mp) {
+					mediaReachedEnd();
+				}
+			});
+
+			play();
+			showPlayingNotification();
+			
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
+	
+	private void showPlayingNotification(){
+		mNotifyManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+	    Notification not = new Notification(R.drawable.icon_audioshow, currentMedia.getInfo(), System.currentTimeMillis());
+	    PendingIntent contentIntent = PendingIntent.getActivity(this, 0, new Intent(this, AudioshowActivity.class), Notification.FLAG_ONGOING_EVENT);        
+	    not.flags = Notification.FLAG_ONGOING_EVENT;
+	    not.setLatestEventInfo(this, "Application Name", "Application Description", contentIntent);
+	    mNotifyManager.notify(1, not);
+	}
+	
+	protected void mediaReachedEnd() {
+		if (progressNotification != null)
+			handler.removeCallbacks(progressNotification);
+
+		if (currentIndex < audioTracks.size() - 1) {
+			currentIndex++;
+			generatePlayer();
+		} else
+			sendFinishedBroadcast();
+
+	}
+
+	public void stopPlayer() {
+		if (mediaPlayer != null) {
+			mediaPlayer.stop();
+		}
+	}
+
+	public void play(int trackIndex) {
+		this.currentIndex = Math.min(audioTracks.size() - 1, trackIndex);
+		this.currentIndex = Math.max(0, this.currentIndex);
+		generatePlayer();
+	}
+
+	public boolean isPlaying() {
+		return mediaPlayer != null && mediaPlayer.isPlaying();
+	}
+
+	public String getPlayingChapterUid() {
+		return playingChapterUid;
+	}
+
+	public void setPlayingChapterUid(String playingChapterUid) {
+		this.playingChapterUid = playingChapterUid;
+	}
+
+	public long getMediaID() {
+		if (currentMedia != null)
+			return currentMedia.getId();
+		return 0;
+	}
+
+	// public int getDuration() {
+	// return duration;
+	// }
+	//
+
+}

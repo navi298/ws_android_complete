@@ -1,0 +1,68 @@
+package de.bergwild.android.mobile.component;
+
+import android.app.Activity;
+import android.content.Context;
+import android.util.AttributeSet;
+import android.view.Gravity;
+import android.widget.Button;
+import de.bergwild.android.mobile.R;
+import de.bergwild.android.util.Gui;
+import de.bergwild.android.util.ImageUtil;
+
+public class DoubleLineButton extends Button {
+
+	private static final int ACTIVE_MS = 350;
+	private Activity context;
+
+	public DoubleLineButton(Context context, AttributeSet attrs, int defStyle) {
+		super(context, attrs, defStyle);
+	}
+
+	public DoubleLineButton(Activity context, String bigText, String smallText, int iconId) {
+		super(context);
+		this.context = context;
+		setText(Gui.textMediumDoubleLine(bigText, smallText));
+		setGravity(Gravity.LEFT | Gravity.CENTER_VERTICAL);
+		if (iconId > 0)
+			setCompoundDrawables(ImageUtil.getImageDrawable(context, iconId), null, null, null);
+		setCompoundDrawablePadding(20);
+		setPadding(12, 8, 8, 8);
+		setTextColor(context.getResources().getColor(R.color.button_txt_default));
+	}
+
+	public void click() {
+		new Click().start();
+	}
+
+	class Click extends Thread {
+
+		@Override
+		public void run() {
+			super.run();
+
+			context.runOnUiThread(new Runnable() {
+				@Override
+				public void run() {
+					setTextColor(context.getResources().getColor(R.color.button_txt_active));
+
+				}
+			});
+
+			try {
+				sleep(ACTIVE_MS);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+
+			context.runOnUiThread(new Runnable() {
+				@Override
+				public void run() {
+					setTextColor(context.getResources().getColor(R.color.button_txt_default));
+
+				}
+			});
+
+		}
+	}
+
+}

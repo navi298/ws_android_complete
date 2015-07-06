@@ -1,0 +1,115 @@
+package de.bergwild.android.mobile.document;
+
+import android.graphics.Canvas;
+import android.graphics.Paint;
+import android.graphics.RectF;
+import de.bergwild.android.mobile.tools.ColorTool;
+import de.bw.mm.MStatics;
+import de.bw.mm.doc.MDocGeo;
+
+public class GeoPainter {
+
+	public static void paintGeo(Canvas canvas, Paint paint, MDocGeo docGeo, int backColor, int w, int h) {
+
+		paint.setAntiAlias(true);
+		paint.setDither(true);
+		paint.setAlpha(255);
+		paint.setPathEffect(null);
+		paint.clearShadowLayer();
+		paint.setStrokeJoin(Paint.Join.ROUND);
+		paint.setStrokeCap(Paint.Cap.ROUND);
+
+		int color = ColorTool.getRGB(docGeo.getColor());
+
+		int lineSize = docGeo.getLineSize();
+		if (docGeo.getType() == MStatics.GEO_RECTANGLE) {
+
+			paint.setStyle(Paint.Style.FILL);
+			paint.setColor(backColor);
+			canvas.drawRect(0, 0, w - 1, h - 1, paint);
+
+			paint.setStyle(Paint.Style.STROKE);
+			paint.setColor(color);
+			paint.setStrokeWidth(lineSize);
+			canvas.drawRect(0, 0, w - 1, h - 1, paint);
+		}
+
+		else if (docGeo.getType() == MStatics.GEO_RECTANGLE_ROUND) {
+			paint.setStyle(Paint.Style.FILL);
+			paint.setColor(backColor);
+			canvas.drawRoundRect(new RectF(lineSize / 2, lineSize / 2, w - (lineSize + 1), h - (lineSize + 1)), docGeo.getRadius() / 2, docGeo.getRadius() / 2, paint);
+
+			paint.setStyle(Paint.Style.STROKE);
+			paint.setColor(color);
+			paint.setStrokeWidth(lineSize);
+			canvas.drawRoundRect(new RectF(lineSize / 2, lineSize / 2, w - (lineSize + 1), h - (lineSize + 1)), docGeo.getRadius() / 2, docGeo.getRadius() / 2, paint);
+
+		}
+
+		else if (docGeo.getType() == MStatics.GEO_OVAL) {
+
+			paint.setStyle(Paint.Style.FILL);
+			paint.setColor(backColor);
+			canvas.drawOval(new RectF(lineSize / 2, lineSize / 2, w - (lineSize + 1), h - (lineSize + 1)), paint);
+
+			paint.setStyle(Paint.Style.STROKE);
+			paint.setColor(color);
+			paint.setStrokeWidth(lineSize);
+			canvas.drawOval(new RectF(lineSize / 2, lineSize / 2, w - (lineSize + 1), h - (lineSize + 1)), paint);
+		}
+
+		else if (docGeo.getType() == MStatics.GEO_LINE) {
+
+			paint.setStyle(Paint.Style.STROKE);
+			paint.setColor(color);
+			paint.setStrokeWidth(lineSize);
+
+			int roundOff = 0;
+			// if (docGeo.isRoundLineEnds()) {
+			// g2.setStroke(new BasicStroke(docGeo.getLineSize(), BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+			// roundOff = (docGeo.getLineSize() / 2);
+			// } else
+			// g2.setStroke(new BasicStroke(docGeo.getLineSize()));
+
+			float ls = docGeo.getLineSize();
+			if (docGeo.getLineType() == MStatics.GEO_LINE_HORIZONTAL)
+				canvas.drawLine(roundOff, (int) (ls / 2), w - (roundOff + 1), (int) (ls / 2), paint);
+			else if (docGeo.getLineType() == MStatics.GEO_LINE_VERTICAL)
+				canvas.drawLine((int) (ls / 2), roundOff, (int) (ls / 2), h - (roundOff + 1), paint);
+			else if (docGeo.getLineType() == MStatics.GEO_LINE_DOWN)
+				canvas.drawLine((int) (ls * 0.75), (int) (ls * 0.75), (int) (w - (ls * 0.75)), (int) (h - (ls * 0.75)), paint);
+			else if (docGeo.getLineType() == MStatics.GEO_LINE_UP)
+				canvas.drawLine((int) (ls * 0.75), (int) (h - (ls * 0.75)), (int) (w - (ls * 0.75)), (int) (ls * 0.75), paint);
+
+		}
+
+		// else if (docGeo.getType() == MStatics.GEO_SEPARATOR_V) {
+		//
+		// if (docGeo.getLineSize() <= 2)
+		// StyleTextPainter.verticalSeparator(g2, 0, 0, getHeight() - 1, ColorTool.toColor(docGeo.getColor3()),
+		// ColorTool.toColor(docGeo.getColor2()), ColorTool.toColor(docGeo.getColor1()));
+		// else
+		// StyleTextPainter.verticalSeparatorBig(g2, 0, 0, getHeight() - 1, ColorTool.toColor(docGeo.getColor3()),
+		// ColorTool.toColor(docGeo.getColor2()), ColorTool.toColor(docGeo.getColor1()));
+		//
+		// } else if (docGeo.getType() == MStatics.GEO_SEPARATOR_H) {
+		//
+		// g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, (float) docGeo.getLineTransparenz() /
+		// 100));
+		//
+		// if (docGeo.getLineSize() <= 2)
+		// StyleTextPainter.horizontalSeparator(g2, 0, 1, w - 1, ColorTool.toColor(docGeo.getColor3()),
+		// ColorTool.toColor(docGeo.getColor2()), ColorTool.toColor(docGeo.getColor1()));
+		// else
+		// StyleTextPainter.horizontalSeparatorBig(g2, 0, 2, w - 1, ColorTool.toColor(docGeo.getColor3()),
+		// ColorTool.toColor(docGeo.getColor2()), ColorTool.toColor(docGeo.getColor1()));
+		// }
+		//
+		// if (docGeo.getType() == MStatics.GEO_TEXT) {
+		// final AffineTransform at_zoom = new AffineTransform();
+		// at_zoom.setToScale(zFactor, zFactor);
+		// g2.transform(at_zoom);
+		// StyleTextPainter.paint(docGeo.getStyleText(), g2, lang, false, 1);
+		// }
+	}
+}

@@ -1,0 +1,306 @@
+package de.bergwild.android.mobile;
+
+import java.util.ArrayList;
+
+import android.app.Activity;
+import android.content.Intent;
+import android.graphics.Color;
+import android.os.Bundle;
+import android.view.Gravity;
+import android.view.View;
+import android.widget.LinearLayout;
+import android.widget.LinearLayout.LayoutParams;
+import android.widget.ScrollView;
+import android.widget.TextView;
+import de.bergwild.android.mobile.component.DoubleLineText;
+import de.bergwild.android.mobile.connection.OnlineConnection;
+import de.bergwild.android.mobile.connection.OnlineConnector;
+import de.bergwild.android.mobile.tools.ElementHandler;
+import de.bergwild.android.mobile.tools.Out;
+import de.bergwild.android.mobile.tools.Tags;
+import de.bergwild.android.mobile.tools.ThreadTool;
+import de.bergwild.android.mobile.tools.ViewBuilder;
+import de.bergwild.android.util.Gui;
+import de.bergwild.android.util.TimeUtil;
+import de.bergwild.android.util.component.BasisActivity;
+import de.bergwild.android.util.component.Feedback;
+import de.bergwild.android.util.interfaces.ResultBooleanIF;
+import de.bergwild.android.util.interfaces.ResultObjectIF;
+import de.bergwild.android.util.task.AsyncInterminateInterface;
+import de.bergwild.android.util.task.AsyncProgressTask;
+import de.bw.mm.MStatics;
+import de.bw.mm.forum.MThread;
+import de.bw.mm.forum.MThreadGroup;
+
+public class ThreadGroupActivity extends BasisActivity {
+
+	private LinearLayout headerLayout;
+	private LinearLayout contentLayout;
+	private ScrollView contentScroll;
+	private String title;
+	private int indexForNew = 0;
+	public static MThreadGroup currentGroup;
+
+	@Override
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		setContentView(R.layout.activity_threadgroup);
+
+		headerLayout = (LinearLayout) findViewById(R.id.ll_threadgroup_header);
+		contentLayout = (LinearLayout) findViewById(R.id.ll_threadgroup_content);
+		contentScroll = (ScrollView) findViewById(R.id.ll_threadgroup_scroll);
+		contentLayout.setPadding(5, 2, 5, 5);
+		// groupID = getIntent().getStringExtra(Tags.THREADGROUPID);
+		title = getIntent().getStringExtra(Tags.THREADGROUPTITEL);
+		// bookIdent = getIntent().getStringExtra(Tags.BOOKIDENT);
+		setTitle(title);
+
+		final DoubleLineText newThreadBut = new DoubleLineText(this, "Neuer Beitrag", "Klicken Sie hier um neue Fragen, Infos, Bewertungen,... einzufügen", R.style.holo_ts_light_22_normal, R.style.holo_ts_light_14_normal, R.color.button_txt_dark,
+				true);
+		newThreadBut.setDivColor(Color.TRANSPARENT);
+		newThreadBut.init();
+		newThreadBut.setLayoutParams(new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.MATCH_PARENT, 10f));
+		newThreadBut.setWeightSum(10);
+		newThreadBut.setPadding(5, 8, 5, 5);
+		newThreadBut.setBackgroundResource(R.drawable.holo_back_button_dark_toggle);
+		headerLayout.addView(newThreadBut);
+		newThreadBut.setOnClickListener(new View.OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				newThreadBut.click();
+				if (OnlineConnector.fac().getUser() == null) {
+					LoginDialog.askForLogin(ThreadGroupActivity.this, "Nicht angemeldet", "Um Forenbeiträge einzufügen müssen Sie mit Ihren Nutzerkonto angemeldet sein.", new ResultBooleanIF() {
+						@Override
+						public void sentResult(boolean b) {
+							if (b)
+								newThread();
+
+						}
+					});
+				} else
+					newThread();
+			}
+		});
+
+		if (currentGroup != null)
+			new AsyncProgressTask(this, new LoadTask(), "Lade Forenbeiträge", "", false).execute();
+		else
+			showNoThreadsSign();
+	}
+
+	protected void newThread() {
+
+		final MThread entry = new MThread(MStatics.generateUID(), currentGroup.getUid(), currentGroup.getBookIdent(), "", "", "", ElementHandler.LANG, "");
+		entry.setUserName(OnlineConnector.fac().getUser().getUsername());
+		entry.setDate(TimeUtil.getTimeAndDate(ElementHandler.LANG));
+
+		ViewBuilder.showThreadFormular(ThreadGroupActivity.this, "Bitte geben Sie den Titel und Text für Ihren Forenbeitrag ein.", entry, new ResultBooleanIF() {
+			@Override
+			public void sentResult(boolean b) {
+				if (b) {
+					OnlineConnector.fac().setThread(entry, new ResultObjectIF() {
+						@Override
+						public void sentResult(Object object, int errorcode) {
+							if (errorcode == OnlineConnection.OK) {
+								ThreadGroupActivity.this.runOnUiThread(new Runnable() {
+									@Override
+									public void run() {
+										ThreadPreview prview = new ThreadPreview(ThreadGroupActivity.this, entry, true);
+										contentLayout.addView(prview, indexForNew);
+										contentScroll.scrollTo(0, 0);
+									}
+								});
+
+							} else
+								showConnectionError();
+						}
+					});
+				}
+
+			}
+		});
+
+	}
+
+	class LoadTask extends AsyncInterminateInterface {
+		@Override
+		public void taskFinishedNormaly(AsyncProgressTask task) {
+		}
+
+		@Override
+		public void taskCanceld(AsyncProgressTask task) {
+		}
+
+		@Override
+		public void doInBackground(String... params) {
+			OnlineConnector.fac().getThreads(currentGroup.getUid(), new ResultObjectIF() {
+				@Override
+				public void sentResult(Object object, int errorcode) {
+					addThreads(object, errorcode);
+					getTask().dismiss();
+				}
+			});
+		}
+	}
+
+	private void addThreads(final Object object, final int errorcode) {
+		runOnUiThread(new Runnable() {
+			@Override
+			public void run() {
+
+				if (errorcode == OnlineConnection.OK) {
+					@SuppressWarnings("unchecked")
+					ArrayList<MThread> threads = (ArrayList<MThread>) object;
+
+					contentLayout.removeAllViews();
+					contentLayout.addView(Gui.verticalDistance(ThreadGroupActivity.this, 1, getResources().getColor(R.color.holo_marin)));
+					indexForNew = 1;
+					for (MThread thread : threads) {
+						ThreadPreview prview = new ThreadPreview(ThreadGroupActivity.this, thread, false);
+						contentLayout.addView(prview);
+					}
+
+					if (threads.size() == 0)
+						showNoThreadsSign();
+				} else
+					showConnectionError();
+			}
+		});
+
+	}
+
+	private void showNoThreadsSign() {
+		ThreadGroupActivity.this.runOnUiThread(new Runnable() {
+			@Override
+			public void run() {
+				Feedback.showInfo(ThreadGroupActivity.this, "Keine Beiträge", "Zu diesem Thema gibt es noch keine Beiträge.", null, Feedback.INFO_TYPE_INFO);
+			}
+		});
+	}
+
+	private void showConnectionError() {
+		ThreadGroupActivity.this.runOnUiThread(new Runnable() {
+			@Override
+			public void run() {
+				Feedback.showInfo(ThreadGroupActivity.this, "Fehler", "Die Forenbeiträge konnten nicht geladen werden. Eventuell steht keine Internetverbindung zur Verfügung.", null, Feedback.INFO_TYPE_INFO);
+			}
+		});
+	}
+
+	private void showNoContent() {
+		ThreadGroupActivity.this.runOnUiThread(new Runnable() {
+			@Override
+			public void run() {
+				Feedback.showInfo(ThreadGroupActivity.this, "", "Die Forenbeiträge konnten nicht geladen werden. Eventuell steht keine Internetverbindung zur Verfügung.", null, Feedback.INFO_TYPE_INFO);
+			}
+		});
+
+	}
+
+	// class ThreadPreview extends DoubleLineText {
+	//
+	// public ThreadPreview(Activity context, final MThread thread, boolean aktiv) {
+	// super(context, thread.getTitle(), thread.getSubtitle(), aktiv ? R.style.holo_ts_red_18_normal :
+	// R.style.holo_ts_light_18_normal, aktiv ? R.style.holo_ts_red_14_normal : R.style.holo_ts_light_14_normal,
+	// R.color.button_txt_dark, true);
+	// setDivColor(getResources().getColor(R.color.holo_gray_button));
+	// init();
+	// setPadding(5, 5, 5, 5);
+	// setOnClickListener(new View.OnClickListener() {
+	// @Override
+	// public void onClick(View v) {
+	// // Hier den Thread noch vorher füllen....
+	// click();
+	// new ThreadTool(ThreadGroupActivity.this, thread, new ResultObjectIF() {
+	// @Override
+	// public void sentResult(Object object, int errorcode) {
+	// if (errorcode == OnlineConnection.OK || errorcode == OnlineConnection.NO_CONTENT_FOUND) {
+	// ThreadActivity.currentThread = thread;
+	// Intent intent = new Intent(ThreadGroupActivity.this, ThreadActivity.class);
+	// intent.putExtra(Tags.THREADUID, thread.getUid());
+	// intent.putExtra(Tags.THREADTITEL, title);
+	// ThreadGroupActivity.this.startActivity(intent);
+	// } else
+	// showConnectionError();
+	//
+	// }
+	//
+	// }).fill();
+	//
+	// }
+	// });
+	//
+	// }
+	//
+	// }
+
+}
+
+class ThreadPreview extends LinearLayout {
+
+	private BasisActivity context;
+
+	public ThreadPreview(final BasisActivity context, final MThread thread, boolean aktiv, final String title) {
+		super(context);
+		this.context = context;
+		setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
+		setOrientation(LinearLayout.VERTICAL);
+		setPadding(5, 0, 5, 5);
+		LinearLayout topLayout = new LinearLayout(context);
+		topLayout.setOrientation(LinearLayout.HORIZONTAL);
+		topLayout.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
+		addView(topLayout);
+
+		TextView titleView = Gui.getTextView(context, thread.getTitle(), aktiv ? R.style.holo_ts_red_18_normal : R.style.holo_ts_white_18_normal, 0);
+		titleView.setLayoutParams(new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT, 5f));
+		titleView.setGravity(Gravity.LEFT);
+		topLayout.addView(titleView);
+
+		Out.e(thread.getTitle() + " " + thread.getDate());
+
+		TextView dateView = Gui.getTextView(context, TimeUtil.convertToDate(ElementHandler.LANG, thread.getDate()), aktiv ? R.style.holo_ts_red_14_normal : R.style.holo_ts_light_14_normal, 0);
+		dateView.setLayoutParams(new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT, 1f));
+		dateView.setGravity(Gravity.RIGHT);
+		topLayout.addView(dateView);
+
+		if (thread.getSubtitle() != null && thread.getSubtitle().length() > 0)
+			addView(Gui.getTextView(context, thread.getSubtitle(), aktiv ? R.style.holo_ts_red_15_normal : R.style.holo_ts_light_15_normal, 0));
+
+		addView(Gui.verticalDistance(context, 5));
+		addView(Gui.verticalDistance(context, 1, getResources().getColor(R.color.holo_gray_button)));
+
+		setOnClickListener(new View.OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				// Hier den Thread noch vorher füllen....
+				// click();
+				new ThreadTool(context, thread, new ResultObjectIF() {
+					@Override
+					public void sentResult(Object object, int errorcode) {
+						if (errorcode == OnlineConnection.OK || errorcode == OnlineConnection.NO_CONTENT_FOUND) {
+							ThreadActivity.currentThread = thread;
+							Intent intent = new Intent(context, ThreadActivity.class);
+							intent.putExtra(Tags.THREADUID, thread.getUid());
+							intent.putExtra(Tags.THREADTITEL, title);
+							context.startActivity(intent);
+						} else
+							showConnectionError();
+
+					}
+
+				}).fill();
+
+			}
+		});
+
+	}
+
+	private void showConnectionError() {
+		context.runOnUiThread(new Runnable() {
+			@Override
+			public void run() {
+				Feedback.showInfo(context, "Fehler", "Die Forenbeiträge konnten nicht geladen werden. Eventuell steht keine Internetverbindung zur Verfügung.", null, Feedback.INFO_TYPE_INFO);
+			}
+		});
+	}
+}

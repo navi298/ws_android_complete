@@ -1,0 +1,641 @@
+package de.bergwild.android.mobile;
+
+import java.io.File;
+import java.util.ArrayList;
+
+import android.content.BroadcastReceiver;
+import android.content.ComponentName;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.content.ServiceConnection;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.Paint.Style;
+import android.graphics.Rect;
+import android.os.Bundle;
+import android.os.IBinder;
+import android.view.Gravity;
+import android.view.MotionEvent;
+import android.view.View;
+import android.view.View.OnTouchListener;
+import android.widget.ImageButton;
+import android.widget.LinearLayout;
+import android.widget.LinearLayout.LayoutParams;
+import android.widget.SeekBar;
+import android.widget.TextView;
+import de.bergwild.android.mobile.audio.AudioService;
+import de.bergwild.android.mobile.audio.AudioshowInterface;
+import de.bergwild.android.mobile.tools.ElementHandler;
+import de.bergwild.android.mobile.tools.Out;
+import de.bergwild.android.mobile.tools.SerialObject;
+import de.bergwild.android.mobile.tools.Statics;
+import de.bergwild.android.util.Gui;
+import de.bergwild.android.util.component.BasisActivity;
+import de.bergwild.android.util.task.AsyncInterminateInterface;
+import de.bergwild.android.util.task.AsyncProgressTask;
+import de.bw.mm.MBook;
+import de.bw.mm.MBookChapter;
+import de.bw.mm.MChapter;
+import de.bw.mm.MMedia;
+import de.bw.mm.audio.MAudioChapter;
+import de.bw.mm.audio.MAudioFile;
+import de.bw.mm.audio.MAudioshow;
+import de.bw.mm.basis.MBookReport;
+
+public class AudioshowActivity extends BasisActivity {
+
+	private static final String TAG_CHAPTERUID = "chapteruid";
+	private MessageReceiver messageReceiver = new MessageReceiver();
+	private ImageButton buttonPlayStop;
+	private ImageButton buttonForward;
+	private ImageButton buttonBackward;
+	private SeekBar seekBar;
+	private int playingChapterIndex = -1;
+	private boolean serviceIsBound;
+	private AudioService audioService;
+	private ArrayList<AudioChapterView> allChapterViews = new ArrayList<AudioChapterView>();
+	private LinearLayout contentlayout;
+	private AudioChapterView firstChapter;
+	private LinearLayout conttrolerlayout;
+
+	// private Bundle savedInstanceState;
+	// private String playingChapterUid = "";
+
+	@Override
+	public void onCreate(Bundle savedInstanceState) {
+		// this.savedInstanceState = savedInstanceState;
+		super.onCreate(savedInstanceState);
+		setContentView(R.layout.activity_audioshow);
+
+		contentlayout = (LinearLayout) findViewById(R.id.ll_audioshow_content);
+		conttrolerlayout = (LinearLayout) findViewById(R.id.ll_audioshow_controller);
+
+		buttonPlayStop = new ImageButton(this);
+		buttonPlayStop.setLayoutParams(new LayoutParams(70, LayoutParams.WRAP_CONTENT, 1));
+		buttonPlayStop.setImageResource(R.drawable.icon_player_play);
+		buttonPlayStop.setBackgroundColor(Color.TRANSPARENT);
+		conttrolerlayout.addView(buttonPlayStop);
+		buttonPlayStop.setOnClickListener(new View.OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				if (audioService != null)
+					audioService.switchPlayPause();
+			}
+		});
+
+		buttonBackward = new ImageButton(this);
+		buttonBackward.setLayoutParams(new LayoutParams(70, LayoutParams.WRAP_CONTENT, 1));
+		buttonBackward.setBackgroundColor(Color.TRANSPARENT);
+		conttrolerlayout.addView(buttonBackward);
+		buttonBackward.setImageResource(R.drawable.holo_but_selector_audio_forward);
+		buttonBackward.setOnClickListener(new View.OnClickListener() {
+			@Override
+			public void onClick(View v) {
+
+			}
+		});
+
+		buttonForward = new ImageButton(this);
+		buttonForward.setLayoutParams(new LayoutParams(70, LayoutParams.WRAP_CONTENT, 1));
+		buttonForward.setBackgroundColor(Color.TRANSPARENT);
+		conttrolerlayout.addView(buttonForward);
+		buttonForward.setImageResource(R.drawable.holo_but_selector_audio_forward);
+		buttonForward.setOnClickListener(new View.OnClickListener() {
+			@Override
+			public void onClick(View v) {
+
+			}
+		});
+
+		seekBar = new SeekBar(this);
+		LayoutParams seekBarParams = new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT, 10);
+		seekBarParams.gravity = Gravity.CENTER_VERTICAL;
+		seekBar.setLayoutParams(seekBarParams);
+		conttrolerlayout.addView(seekBar);
+		seekBar.setOnTouchListener(new OnTouchListener() {
+			@Override
+			public boolean onTouch(View v, MotionEvent event) {
+				if (audioService != null)
+					audioService.seekChange(v);
+				return false;
+			}
+		});
+
+		// <ImageButton
+		// android:id="@+id/but_audioshow_play"
+		// android:layout_width="70dp"
+		// android:layout_height="wrap_content"
+		// android:layout_weight="1"
+		// android:onClick="clickButton" />
+		//
+		// <SeekBar
+		// android:id="@+id/SeekBar01"
+		// android:layout_width="fill_parent"
+		// android:layout_height="wrap_content"
+		// android:layout_gravity="center_vertical"
+		// android:layout_weight="10" />
+
+		// buttonPlayStop = (ImageButton) findViewById(R.id.but_audioshow_play);
+		// buttonPlayStop.setImageResource(R.drawable.icon_player_play);
+
+		// seekBar = (SeekBar) findViewById(R.id.SeekBar01);
+
+		if (ElementHandler.fac().getBook() == null) {
+			finish();
+			return;
+		}
+
+		bindGPSService();
+		setChapterViews();
+	}
+
+	private void setChapterViews() {
+
+		AudioIF audioIF = new AudioIF();
+
+		firstChapter = null;
+		allChapterViews.clear();
+		MBook book = ElementHandler.fac().getBook();
+		int chapterIndex = 0;
+		for (MBookChapter bookChap : book.getChapter()) {
+			if (bookChap.isEnableAudioshow()) {
+				AudioChapterView chapView = new AudioChapterView(chapterIndex++, this, bookChap, ElementHandler.fac().getReport(), audioIF);
+				allChapterViews.add(chapView);
+				contentlayout.addView(chapView);
+				if (firstChapter == null)
+					firstChapter = chapView;
+			}
+		}
+
+	}
+
+	class AudioIF implements AudioshowInterface {
+
+		@Override
+		public AudioService getAudioService() {
+			return audioService;
+		}
+
+		@Override
+		public void playingStarted(int chapterIndex) {
+			playingChapterIndex = chapterIndex;
+		}
+
+		@Override
+		public void setPlayingChapter(String uid) {
+			audioService.setPlayingChapterUid(uid);
+		}
+
+		@Override
+		public void tryToPlayNextChapter() {
+			AudioshowActivity.this.tryToPlayNextChapter();
+
+		}
+
+	}
+
+	// public void clickButton(View view) {
+	//
+	// switch (view.getId()) {
+	// case R.id.but_audioshow_play:
+	// audioService.switchPlayPause();
+	// break;
+	//
+	// default:
+	// break;
+	// }
+	//
+	// }
+
+	private void serviceIsConnected() {
+		if (audioService.isPlaying())
+			tryToRecoverPlayingTrack();
+		else if (firstChapter != null)
+			firstChapter.loadChapter(true, 0);
+	}
+
+	private void tryToRecoverPlayingTrack() {
+		boolean found = false;
+		String chapUid = audioService.getPlayingChapterUid();
+
+		if (chapUid != null) {
+			for (AudioChapterView chapView : allChapterViews) {
+				if (chapView.getBookChapter().getUid().equalsIgnoreCase(chapUid)) {
+					found = true;
+					// chapView.recoverDuration(audioService.getDuration(), audioService.getMediaID());
+					chapView.loadChapter(false, 0);
+					setPlayIcon(true);
+					// buttonPlayStop.setChecked(true);
+				}
+			}
+		}
+		if (!found && firstChapter != null)
+			firstChapter.loadChapter(true, 0);
+
+	}
+
+	private ServiceConnection mConnection = new ServiceConnection() {
+
+		/**
+		 * Wird jedesmal neu aufgerufen auch wenn der Service schon gebunden war und nochmal gebunde wird. onCreate vom
+		 * Service wird aber nicht mehr beim wiederholten binden aufgerufen, denn der Service wird ja nicht neu
+		 * gestartet, sondern nur mit der Acrivity verbunden.
+		 **/
+		public void onServiceConnected(ComponentName className, IBinder service) {
+			audioService = ((AudioService.LocalBinder) service).getService();
+			Out.s("--- onServiceConnected: ");
+			serviceIsConnected();
+
+		}
+
+		public void onServiceDisconnected(ComponentName className) {
+			audioService = null;
+			Out.s("--- onServiceDisconnected: ");
+		}
+	};
+
+	@Override
+	protected void onStop() {
+		super.onStop();
+		unbindGPSService();
+	}
+
+	@Override
+	protected void onResume() {
+		super.onResume();
+		getApplicationContext().registerReceiver(messageReceiver, new IntentFilter(AudioService.ACTION_BROADCAST));
+	}
+
+	@Override
+	protected void onPause() {
+		super.onPause();
+		getApplicationContext().unregisterReceiver(messageReceiver);
+	}
+
+	/**
+	 * hier wird erst überprüft ob dder Service schon läuft. Wenn ja, dann wird er nicht neu gestartet, sondern nur neu
+	 * an diese Activity gebunden. Ansonsten würden ständig neue Services gestartet werden.
+	 **/
+	private void bindGPSService() {
+		Intent intent = new Intent(AudioshowActivity.this, AudioService.class);
+		// intent.putExtra(GPSService.TAG_TRACKNAME, trackname);
+
+		if (!AudioService.curentlyRunning)
+			startService(intent);
+		bindService(intent, mConnection, 0);
+		serviceIsBound = true;
+	}
+
+	/** Das unbinden eines gestarteten Service zerstört den Service nicht. **/
+	private void unbindGPSService() {
+		if (serviceIsBound) {
+			unbindService(mConnection);
+			serviceIsBound = false;
+		}
+	}
+
+	private void stopAudioService() {
+		unbindGPSService();
+		stopService(new Intent(AudioshowActivity.this, AudioService.class));
+	}
+
+	class MessageReceiver extends BroadcastReceiver {
+
+		@Override
+		public void onReceive(Context context, Intent intent) {
+			try {
+				Bundle bundle = intent.getExtras();
+				int type = bundle.getInt(AudioService.TAG_BROADCASTTYPE);
+
+				switch (type) {
+				case AudioService.BROADCASTTYPE_PLAYINGSTARTED:
+					setPlayIcon(true);
+					break;
+				case AudioService.BROADCASTTYPE_PLAYINGSTOPPED:
+					setPlayIcon(false);
+					break;
+				case AudioService.BROADCASTTYPE_PROGRESS:
+					int progress = bundle.getInt(AudioService.TAG_PROGRESS);
+					int duration = bundle.getInt(AudioService.TAG_DURATION);
+					notifyProgress(progress, duration, bundle.getLong(AudioService.TAG_MEDIAID));
+					break;
+				case AudioService.BROADCASTTYPE_FINISHED:
+					tryToPlayNextChapter();
+					break;
+
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+
+		}
+	}
+
+	public void setPlayIcon(boolean playing) {
+		if (playing)
+			buttonPlayStop.setImageResource(R.drawable.icon_player_pause);
+		else
+			buttonPlayStop.setImageResource(R.drawable.icon_player_play);
+	}
+
+	// public void notifyDuration(int duration, long mediaId) {
+	// Out.e("duration: " + duration);
+	// seekBar.setMax(duration);
+	// for (AudioChapterView aView : allChapterViews)
+	// aView.notifyDuration(duration, mediaId);
+	//
+	// }
+
+	public void tryToPlayNextChapter() {
+		if (playingChapterIndex < allChapterViews.size() - 1) {
+			AudioChapterView audioChapterView = allChapterViews.get(playingChapterIndex + 1);
+			audioChapterView.loadChapter(true, 0);
+			setPlayIcon(true);
+
+		} else
+			setPlayIcon(false);
+
+	}
+
+	public void notifyProgress(int progress, int duration, long mediaId) {
+		Out.s("progress: " + progress);
+		seekBar.setProgress(progress);
+		seekBar.setMax(duration);
+		for (AudioChapterView aView : allChapterViews)
+			aView.notifyProgress(progress, duration, mediaId);
+
+	}
+
+}
+
+class AudioChapterView extends LinearLayout {
+
+	private MBookChapter bookChapter;
+	private MBookReport report;
+	private BasisActivity context;
+	private boolean loaded = false;
+	private MAudioshow audioshow;
+	private AudioshowInterface audioIF;
+	private ArrayList<AudioFileView> allFileViews = new ArrayList<AudioFileView>();
+	private int chapterIndex;
+
+	public AudioChapterView(int chapterIndex, BasisActivity context, MBookChapter bookChapter, MBookReport report, AudioshowInterface audioIF) {
+		super(context);
+		this.chapterIndex = chapterIndex;
+		this.context = context;
+		this.bookChapter = bookChapter;
+		this.report = report;
+		this.audioIF = audioIF;
+
+		setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
+		setOrientation(LinearLayout.VERTICAL);
+		TextView chapterView = Gui.getTextView(context, bookChapter.getName() + " " + bookChapter.isEnableAudioshow(), R.style.holo_ts_light_22_normal, 0);
+		addView(chapterView);
+		setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				loadChapter(true, 0);
+			}
+		});
+	}
+
+	public MBookChapter getBookChapter() {
+		return bookChapter;
+	}
+
+	// public void notifyDuration(int duration, long mediaId) {
+	// for (AudioFileView aView : allFileViews)
+	// aView.notifyDuration(duration, mediaId);
+	//
+	// }
+
+	public void notifyProgress(int progress, int duration, long mediaId) {
+
+		for (AudioFileView aView : allFileViews)
+			aView.notifyProgress(progress, duration, mediaId);
+
+	}
+
+	public void loadChapter(boolean play, int startTrackIndex) {
+		if (!loaded)
+			new AsyncProgressTask(context, new LoadTask(play, startTrackIndex), "Lade Audiodateien", "", false).execute();
+		else if (play)
+			startPlaying(startTrackIndex);
+
+	}
+
+	class LoadTask extends AsyncInterminateInterface {
+
+		private boolean play;
+		private int startTrackIndex = 0;
+
+		public LoadTask(boolean play, int startTrackIndex) {
+			super();
+			this.play = play;
+			this.startTrackIndex = startTrackIndex;
+		}
+
+		@Override
+		public void taskFinishedNormaly(AsyncProgressTask task) {
+		}
+
+		@Override
+		public void taskCanceld(AsyncProgressTask task) {
+		}
+
+		@Override
+		public void doInBackground(String... params) {
+			loaded = true;
+			final MChapter chap = (MChapter) SerialObject.fac().getObject(report, bookChapter.getUid());
+			if (chap != null) {
+				context.runOnUiThread(new Runnable() {
+					@Override
+					public void run() {
+						getTask().dismiss();
+						if (!isChapterEmpty(chap)) {
+							setChapter(chap);				
+							if (play)
+								startPlaying(startTrackIndex);
+						} else if (!audioIF.getAudioService().isPlaying())
+							audioIF.tryToPlayNextChapter();
+
+						// else
+						// tr
+					}
+				});
+			}
+		}
+
+		protected boolean isChapterEmpty(MChapter chap) {
+			if (chap == null || chap.getAudioshow() == null || chap.getAudioshow().getChapter().size() == 0)
+				return true;
+
+			for (MAudioChapter audioChap : chap.getAudioshow().getChapter()) {
+				for (MAudioFile audioFile : audioChap.getAudiofiles()) {
+					String absolutePath = MainTool.getAbsolutePath(audioFile.getAudio(), ElementHandler.fac().getReport(), Statics.MEDIASSIZE_DEFAULT);
+					if (absolutePath != null && new File(absolutePath).exists())
+						return false;
+				}
+			}
+			return true;
+		}
+	}
+
+	protected void setChapter(MChapter chap) {
+		audioshow = chap.getAudioshow();
+		if (audioshow == null)
+			return;
+		allFileViews.clear();
+		int fileIndex = 0;
+		for (MAudioChapter audioChap : audioshow.getChapter()) {
+			for (MAudioFile audioFile : audioChap.getAudiofiles()) {
+				String absolutePath = MainTool.getAbsolutePath(audioFile.getAudio(), ElementHandler.fac().getReport(), Statics.MEDIASSIZE_DEFAULT);
+				if (absolutePath != null && new File(absolutePath).exists()) {
+					AudioFileView audioFileView = new AudioFileView(fileIndex++, context, audioFile, report, audioIF, this);
+					allFileViews.add(audioFileView);
+					addView(audioFileView);
+				}
+			}
+
+		}
+
+	}
+
+	private void startPlaying(int startTrackIndex) {
+		if (audioshow == null)
+			return;
+
+		ArrayList<MMedia> audioTracks = new ArrayList<MMedia>();
+		for (MAudioChapter chap : audioshow.getChapter()) {
+			for (MAudioFile audioFile : chap.getAudiofiles()) {
+				MMedia audio = audioFile.getAudio();
+				audio.setInfo(audioFile.getName());
+				String absolutePath = MainTool.getAbsolutePath(audio, ElementHandler.fac().getReport(), Statics.MEDIASSIZE_DEFAULT);
+				if (absolutePath != null) {
+					audio.setPath(absolutePath);
+					audioTracks.add(audio);
+				}
+			}
+		}
+
+		if (audioIF.getAudioService() != null) {
+			audioIF.playingStarted(chapterIndex);
+			audioIF.getAudioService().setTracks(audioTracks, startTrackIndex);
+		}
+
+	}
+}
+
+class AudioFileView extends LinearLayout {
+
+	private BasisActivity context;
+	private MAudioFile audioFile;
+	private MBookReport report;
+	private MMedia audio;
+	private boolean paintProgress = false;
+	private float progress;
+	private float duration = 1000000;
+	private ProgressLine progressLine;
+	private AudioshowInterface audioIF;
+	private String chapterUid;
+	private AudioChapterView parent;
+
+	public AudioFileView(final int trackIndex, BasisActivity context, MAudioFile audioFile, MBookReport report, final AudioshowInterface audioIF, final AudioChapterView parent) {
+		super(context);
+		this.context = context;
+		this.audioFile = audioFile;
+		this.report = report;
+		this.audioIF = audioIF;
+		this.parent = parent;
+		this.chapterUid = parent.getBookChapter().getUid();
+		audio = audioFile.getAudio();
+		setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
+		setOrientation(LinearLayout.VERTICAL);
+		TextView nameView = Gui.getTextView(context, (trackIndex + 1) + ". " + audioFile.getName(), R.style.holo_ts_light_18_normal, 10);
+		addView(nameView);
+		progressLine = new ProgressLine(context);
+		addView(progressLine);
+		setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				if (audioIF.getAudioService().getPlayingChapterUid() != null && audioIF.getAudioService().getPlayingChapterUid().equals(chapterUid))
+					audioIF.getAudioService().startPlayer(trackIndex);
+				else
+					parent.loadChapter(true, trackIndex);
+
+			}
+		});
+
+	}
+
+	public void notifyProgress(int progress, int duration, long mediaId) {
+		if (audio != null && audio.getId() == mediaId) {
+			this.progress = progress;
+			this.duration = duration;
+			paintProgress = true;
+			audioIF.setPlayingChapter(chapterUid);
+		} else {
+			this.progress = 0;
+			paintProgress = false;
+		}
+		progressLine.invalidate();
+
+	}
+
+	// public void notifyDuration(int duration, long mediaId) {
+	// if (audio != null && audio.getId() == mediaId) {
+	// this.duration = duration;
+	// paintProgress = true;
+	// audioIF.setPlayingChapter(chapterUid);
+	// } else
+	// paintProgress = false;
+	//
+	// progressLine.invalidate();
+	// }
+
+	class ProgressLine extends View {
+
+		private Paint mPaint = new Paint();
+
+		public ProgressLine(Context context) {
+			super(context);
+			setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT, 13));
+		}
+
+		/**
+		 * When you call any of the set*() method you replace the entire content of the Matrix. In your first example,
+		 * only setTranslate() is taken into account. You need to use the pre*() and post*() methods to combine the
+		 * translate and scale operations.
+		 **/
+		@Override
+		protected void onDraw(Canvas canvas) {
+
+			if (!paintProgress)
+				return;
+
+			Paint paint = mPaint;
+
+			canvas.save();
+
+			int left = 25;
+			int right = getWidth() - 100;
+
+			float done_percent = progress / duration;
+			float done_pix = (float) (right - left) * done_percent;
+
+			paint.setStyle(Style.FILL);
+			paint.setColor(Color.WHITE);
+			canvas.drawRect(new Rect(left, 3, (int) (left + done_pix), 8), paint);
+
+			paint.setStyle(Style.STROKE);
+			paint.setStrokeWidth(1);
+			paint.setColor(Color.RED);
+			canvas.drawRect(new Rect(left, 3, right, 8), paint);
+
+			canvas.restore();
+		}
+	}
+
+}

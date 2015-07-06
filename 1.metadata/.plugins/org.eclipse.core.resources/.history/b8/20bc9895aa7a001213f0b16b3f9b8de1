@@ -1,0 +1,128 @@
+package de.bergwild.android.forum;
+
+import android.content.Intent;
+import android.view.Gravity;
+import android.view.View;
+import android.widget.LinearLayout;
+import android.widget.TextView;
+import de.bergwild.android.mobile.R;
+import de.bergwild.android.mobile.ThreadActivity;
+import de.bergwild.android.mobile.connection.OnlineConnection;
+import de.bergwild.android.mobile.tools.ElementHandler;
+import de.bergwild.android.mobile.tools.Out;
+import de.bergwild.android.mobile.tools.Tags;
+import de.bergwild.android.mobile.tools.ThreadTool;
+import de.bergwild.android.util.Gui;
+import de.bergwild.android.util.TimeUtil;
+import de.bergwild.android.util.component.BasisActivity;
+import de.bergwild.android.util.component.Feedback;
+import de.bergwild.android.util.interfaces.ResultObjectIF;
+import de.bw.mm.forum.MThread;
+
+public class ThreadPreview extends LinearLayout {
+
+	private BasisActivity context;
+	private int textAppereance;
+	private int pressedTextAppereance;
+	private TextView titleView;
+
+	public ThreadPreview(final BasisActivity context, final MThread thread, boolean aktiv, final String title) {
+		super(context);
+		this.context = context;
+		setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
+		setOrientation(LinearLayout.VERTICAL);
+		setPadding(5, 0, 5, 5);
+		LinearLayout topLayout = new LinearLayout(context);
+		topLayout.setOrientation(LinearLayout.HORIZONTAL);
+		topLayout.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
+		addView(topLayout);
+
+		textAppereance = aktiv ? R.style.holo_ts_red_18_normal : R.style.holo_ts_white_18_normal;
+		pressedTextAppereance = R.style.holo_ts_red_18_normal;
+		titleView = Gui.getTextView(context, thread.getTitle(), textAppereance, 0);
+		titleView.setLayoutParams(new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT, 5f));
+		titleView.setGravity(Gravity.LEFT);
+		topLayout.addView(titleView);
+
+		Out.e(thread.getTitle() + " " + thread.getDate());
+
+		TextView dateView = Gui.getTextView(context, TimeUtil.convertToDate(ElementHandler.LANG, thread.getDate()), aktiv ? R.style.holo_ts_red_14_normal : R.style.holo_ts_light_14_normal, 0);
+		dateView.setLayoutParams(new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT, 1f));
+		dateView.setGravity(Gravity.RIGHT);
+		topLayout.addView(dateView);
+
+		if (thread.getSubtitle() != null && thread.getSubtitle().length() > 0)
+			addView(Gui.getTextView(context, thread.getSubtitle(), aktiv ? R.style.holo_ts_red_15_normal : R.style.holo_ts_light_15_normal, 0));
+
+		addView(Gui.verticalDistance(context, 5));
+		addView(Gui.verticalDistance(context, 1, getResources().getColor(R.color.holo_gray_button)));
+
+		setOnClickListener(new View.OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				click();
+				new ThreadTool(context, thread, new ResultObjectIF() {
+					@Override
+					public void sentResult(Object object, int errorcode) {
+						if (errorcode == OnlineConnection.OK || errorcode == OnlineConnection.NO_CONTENT_FOUND) {
+							ThreadActivity.currentThread = thread;
+							Intent intent = new Intent(context, ThreadActivity.class);
+							intent.putExtra(Tags.THREADUID, thread.getUid());
+							intent.putExtra(Tags.THREADTITEL, title);
+							context.startActivity(intent);
+						} else
+							showConnectionError();
+
+					}
+
+				}).fill();
+
+			}
+		});
+
+	}
+
+	public void click() {
+		new Click().start();
+	}
+
+	class Click extends Thread {
+
+		@Override
+		public void run() {
+			super.run();
+
+			context.runOnUiThread(new Runnable() {
+				@Override
+				public void run() {
+					titleView.setTextAppearance(context, pressedTextAppereance);
+
+				}
+			});
+
+			try {
+				sleep(250);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+
+			context.runOnUiThread(new Runnable() {
+				@Override
+				public void run() {
+					titleView.setTextAppearance(context, textAppereance);
+
+				}
+			});
+
+		}
+	}
+
+	private void showConnectionError() {
+		context.runOnUiThread(new Runnable() {
+			@Override
+			public void run() {
+				Feedback.showInfo(context, "Fehler", "Die Forenbeiträge konnten nicht geladen werden. Eventuell steht keine Internetverbindung zur Verfügung.", null, Feedback.INFO_TYPE_INFO);
+			}
+		});
+	}
+}

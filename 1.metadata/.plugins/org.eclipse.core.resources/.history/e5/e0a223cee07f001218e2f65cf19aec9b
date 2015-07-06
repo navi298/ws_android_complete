@@ -1,0 +1,8 @@
+package de.bergwild.android.mobile.audio;
+
+public interface AudioshowInterface {
+
+	public AudioService getAudioService();
+
+	public void playingStarted(int chapterIndex);
+}

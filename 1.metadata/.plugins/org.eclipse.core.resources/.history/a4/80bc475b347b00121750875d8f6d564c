@@ -1,0 +1,681 @@
+package de.bergwild.android.mobile.connection;
+
+import java.lang.reflect.Array;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.apache.http.NameValuePair;
+import org.apache.http.message.BasicNameValuePair;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import de.bergwild.android.mobile.tools.ElementHandler;
+import de.bergwild.android.mobile.tools.Out;
+import de.bergwild.android.util.interfaces.ResultObjectIF;
+import de.bw.mm.forum.MAnswer;
+import de.bw.mm.forum.MEntry;
+import de.bw.mm.forum.MThread;
+import de.bw.mm.forum.MThreadGroup;
+
+public class PHPForumTool {
+
+	// mySQL-datenbank
+	public static final String db_login = "bwclient";
+	public static final String db_password = "bwpass";
+	public static final String TAG_DBLOGIN = "dblogin";
+	public static final String TAG_DBPASSWORD = "dbpassword";
+
+	public static final int ERROR = 0;
+	public static final int SUCCESS = 1;
+	public static final int NO_CONTENT_FOUND = 2;
+
+	private static final String TAG_UID = "uid";
+	private static final String TAG_NUMBER = "number";
+	private static final String TAG_AREATYPE = "areatype";
+	private static final String TAG_TITLE = "title";
+	private static final String TAG_SUBTITLE = "subtitle";
+	private static final String TAG_LANG = "lang";
+	private static final String TAG_BOOKIDENT = "bookident";
+	private static final String TAG_SUCCESS = "success";
+
+	private static final String TAG_GROUPUID = "groupuid";
+	private static final String TAG_USERUID = "useruid";
+	private static final String TAG_USERNAME = "username";
+	private static final String TAG_DATE = "date";
+
+	private static final String TAG_THREADUID = "threaduid";
+	private static final String TAG_TEXT = "text";
+	private static final String TAG_ENTRYUID = "entryuid";
+	private static final String TAG_IDENT = "ident";
+
+	private static final String TAG_SEARCHTEXT = "searchtext";
+
+	private static final String TAG_THREADGROUPS = "threadgroups";
+	private static final String TAG_THREADS = "threads";
+	private static final String TAG_ENTRIES = "entries";
+	private static final String TAG_ANSWERS = "answers";
+
+	public static void setThreadGroup(MThreadGroup tGroup, ResultObjectIF resultIF) {
+
+		JSONParser parser = new JSONParser();
+
+		try {
+			List<NameValuePair> parameter = new ArrayList<NameValuePair>();
+			parameter.add(new BasicNameValuePair(TAG_UID, tGroup.getUid()));
+			parameter.add(new BasicNameValuePair(TAG_AREATYPE, tGroup.getAreatype()));
+			parameter.add(new BasicNameValuePair(TAG_TITLE, tGroup.getTitle()));
+			parameter.add(new BasicNameValuePair(TAG_SUBTITLE, tGroup.getSubtitle()));
+			parameter.add(new BasicNameValuePair(TAG_LANG, tGroup.getLang()));
+			parameter.add(new BasicNameValuePair(TAG_IDENT, tGroup.getIdent()));
+			parameter.add(new BasicNameValuePair(TAG_BOOKIDENT, tGroup.getBookIdent()));
+			parameter.add(new BasicNameValuePair(TAG_DBLOGIN, db_login));
+			parameter.add(new BasicNameValuePair(TAG_DBPASSWORD, db_password));
+
+			String url = "http://" + ElementHandler.host + "/bergwild_connect/forum_setgroup.php";
+			JSONObject json = parser.makeHttpRequest(url, "GET", parameter);
+			if (json == null) {
+				resultIF.sentResult(tGroup, OnlineConnection.ERROR_NOCONNECTION_TOSERVER);
+				return;
+			}
+
+			if (json.getInt(TAG_SUCCESS) == SUCCESS)
+				resultIF.sentResult(tGroup, OnlineConnection.OK);
+			else
+				resultIF.sentResult(tGroup, OnlineConnection.ERROR);
+
+		} catch (JSONException e) {
+			e.printStackTrace();
+			resultIF.sentResult(tGroup, OnlineConnection.ERROR_NOCONNECTION_TOSERVER);
+			return;
+		}
+
+	}
+
+	public static void setThread(MThread thread, ResultObjectIF resultIF) {
+
+		JSONParser parser = new JSONParser();
+
+		try {
+			List<NameValuePair> parameter = new ArrayList<NameValuePair>();
+			parameter.add(new BasicNameValuePair(TAG_UID, thread.getUid()));
+			parameter.add(new BasicNameValuePair(TAG_GROUPUID, thread.getGroupUid()));
+			parameter.add(new BasicNameValuePair(TAG_TITLE, thread.getTitle()));
+			parameter.add(new BasicNameValuePair(TAG_SUBTITLE, thread.getSubtitle()));
+			parameter.add(new BasicNameValuePair(TAG_LANG, thread.getLang()));
+			parameter.add(new BasicNameValuePair(TAG_USERUID, thread.getUserUid()));
+			parameter.add(new BasicNameValuePair(TAG_USERNAME, thread.getUserName()));
+			parameter.add(new BasicNameValuePair(TAG_IDENT, thread.getIdent()));
+			parameter.add(new BasicNameValuePair(TAG_BOOKIDENT, thread.getBookIdent()));
+			parameter.add(new BasicNameValuePair(TAG_TEXT, thread.getText()));
+			parameter.add(new BasicNameValuePair(TAG_DBLOGIN, db_login));
+			parameter.add(new BasicNameValuePair(TAG_DBPASSWORD, db_password));
+
+			String url = "http://" + ElementHandler.host + "/bergwild_connect/forum_setthread.php";
+			JSONObject json = parser.makeHttpRequest(url, "GET", parameter);
+			if (json == null) {
+				resultIF.sentResult(thread, OnlineConnection.ERROR_NOCONNECTION_TOSERVER);
+				return;
+			}
+
+			if (json.getInt(TAG_SUCCESS) == SUCCESS)
+				resultIF.sentResult(thread, OnlineConnection.OK);
+			else
+				resultIF.sentResult(thread, OnlineConnection.ERROR);
+
+		} catch (JSONException e) {
+			e.printStackTrace();
+			resultIF.sentResult(thread, OnlineConnection.ERROR_NOCONNECTION_TOSERVER);
+			return;
+		}
+
+	}
+
+	public static void setEntry(MEntry entry, ResultObjectIF resultIF) {
+
+		JSONParser parser = new JSONParser();
+
+		try {
+			List<NameValuePair> parameter = new ArrayList<NameValuePair>();
+			parameter.add(new BasicNameValuePair(TAG_UID, entry.getUid()));
+			parameter.add(new BasicNameValuePair(TAG_THREADUID, entry.getThreadUid()));
+			parameter.add(new BasicNameValuePair(TAG_TITLE, entry.getTitle()));
+			parameter.add(new BasicNameValuePair(TAG_SUBTITLE, entry.getSubtitle()));
+			parameter.add(new BasicNameValuePair(TAG_LANG, entry.getLang()));
+			parameter.add(new BasicNameValuePair(TAG_USERUID, entry.getUserUid()));
+			parameter.add(new BasicNameValuePair(TAG_USERNAME, entry.getUserName()));
+			parameter.add(new BasicNameValuePair(TAG_TEXT, entry.getText()));
+			parameter.add(new BasicNameValuePair(TAG_BOOKIDENT, entry.getBookIdent()));
+			parameter.add(new BasicNameValuePair(TAG_DBLOGIN, db_login));
+			parameter.add(new BasicNameValuePair(TAG_DBPASSWORD, db_password));
+
+			String url = "http://" + ElementHandler.host + "/bergwild_connect/forum_setentry.php";
+			JSONObject json = parser.makeHttpRequest(url, "GET", parameter);
+			if (json == null) {
+				resultIF.sentResult(entry, OnlineConnection.ERROR_NOCONNECTION_TOSERVER);
+				return;
+			}
+
+			if (json.getInt(TAG_SUCCESS) == SUCCESS)
+				resultIF.sentResult(entry, OnlineConnection.OK);
+			else
+				resultIF.sentResult(entry, OnlineConnection.ERROR);
+
+		} catch (JSONException e) {
+			e.printStackTrace();
+			resultIF.sentResult(entry, OnlineConnection.ERROR_NOCONNECTION_TOSERVER);
+			return;
+		}
+
+	}
+
+	public static void setAnswer(MAnswer answer, ResultObjectIF resultIF) {
+		JSONParser parser = new JSONParser();
+
+		try {
+			List<NameValuePair> parameter = new ArrayList<NameValuePair>();
+			parameter.add(new BasicNameValuePair(TAG_UID, answer.getUid()));
+			parameter.add(new BasicNameValuePair(TAG_ENTRYUID, answer.getEntryUid()));
+			parameter.add(new BasicNameValuePair(TAG_TITLE, answer.getTitle()));
+			parameter.add(new BasicNameValuePair(TAG_LANG, answer.getLang()));
+			parameter.add(new BasicNameValuePair(TAG_USERUID, answer.getUserUid()));
+			parameter.add(new BasicNameValuePair(TAG_USERNAME, answer.getUserName()));
+			parameter.add(new BasicNameValuePair(TAG_TEXT, answer.getText()));
+			parameter.add(new BasicNameValuePair(TAG_BOOKIDENT, answer.getBookIdent()));
+			parameter.add(new BasicNameValuePair(TAG_THREADUID, answer.getThreadUid()));
+			parameter.add(new BasicNameValuePair(TAG_DBLOGIN, db_login));
+			parameter.add(new BasicNameValuePair(TAG_DBPASSWORD, db_password));
+
+			String url = "http://" + ElementHandler.host + "/bergwild_connect/forum_setanswer.php";
+			JSONObject json = parser.makeHttpRequest(url, "GET", parameter);
+			if (json == null) {
+				resultIF.sentResult(answer, OnlineConnection.ERROR_NOCONNECTION_TOSERVER);
+				return;
+			}
+
+			if (json.getInt(TAG_SUCCESS) == SUCCESS)
+				resultIF.sentResult(answer, OnlineConnection.OK);
+			else
+				resultIF.sentResult(answer, OnlineConnection.ERROR);
+
+		} catch (JSONException e) {
+			e.printStackTrace();
+			resultIF.sentResult(answer, OnlineConnection.ERROR_NOCONNECTION_TOSERVER);
+			return;
+		}
+
+	}
+
+	public static void getThreadGroups(String areaType, String bookIdent, String lang, ResultObjectIF resultIF) {
+		ArrayList<MThreadGroup> groups = new ArrayList<MThreadGroup>();
+
+		JSONParser parser = new JSONParser();
+
+		try {
+			List<NameValuePair> parameter = new ArrayList<NameValuePair>();
+			parameter.add(new BasicNameValuePair(TAG_AREATYPE, areaType));
+			parameter.add(new BasicNameValuePair(TAG_LANG, lang));
+			parameter.add(new BasicNameValuePair(TAG_BOOKIDENT, bookIdent));
+			parameter.add(new BasicNameValuePair(TAG_DBLOGIN, db_login));
+			parameter.add(new BasicNameValuePair(TAG_DBPASSWORD, db_password));
+
+			String url = "http://" + ElementHandler.host + "/bergwild_connect/forum_getgroups.php";
+			JSONObject json = parser.makeHttpRequest(url, "GET", parameter);
+			if (json == null) {
+				resultIF.sentResult(groups, OnlineConnection.ERROR_NOCONNECTION_TOSERVER);
+				return;
+			}
+
+			if (json.getInt(TAG_SUCCESS) == SUCCESS) {
+				JSONArray groupArray = json.getJSONArray(TAG_THREADGROUPS);
+				for (int i = 0; i < groupArray.length(); i++) {
+					JSONObject object = groupArray.getJSONObject(i);
+					MThreadGroup group = new MThreadGroup(object.getString(TAG_UID), object.getString(TAG_BOOKIDENT), object.getString(TAG_AREATYPE), object.getString(TAG_TITLE), object.getString(TAG_SUBTITLE), object.getString(TAG_LANG),
+							object.getString(TAG_IDENT));
+					group.setDate(object.getString(TAG_DATE));
+					groups.add(group);
+
+				}
+				resultIF.sentResult(groups, OnlineConnection.OK);
+			} else if (json.getInt(TAG_SUCCESS) == NO_CONTENT_FOUND)
+				resultIF.sentResult(groups, OnlineConnection.NO_CONTENT_FOUND);
+			else
+				resultIF.sentResult(groups, OnlineConnection.ERROR);
+
+		} catch (JSONException e) {
+			resultIF.sentResult(groups, OnlineConnection.ERROR_NOCONNECTION_TOSERVER);
+			e.printStackTrace();
+		}
+
+	}
+
+	public static void getThreads(String groupUid, ResultObjectIF resultIF) {
+		ArrayList<MThread> threads = new ArrayList<MThread>();
+
+		JSONParser parser = new JSONParser();
+
+		try {
+			List<NameValuePair> parameter = new ArrayList<NameValuePair>();
+			parameter.add(new BasicNameValuePair(TAG_GROUPUID, groupUid));
+			parameter.add(new BasicNameValuePair(TAG_DBLOGIN, db_login));
+			parameter.add(new BasicNameValuePair(TAG_DBPASSWORD, db_password));
+
+			String url = "http://" + ElementHandler.host + "/bergwild_connect/forum_getthreads.php";
+			JSONObject json = parser.makeHttpRequest(url, "GET", parameter);
+			if (json == null) {
+				resultIF.sentResult(threads, OnlineConnection.ERROR_NOCONNECTION_TOSERVER);
+				return;
+			}
+
+			if (json.getInt(TAG_SUCCESS) == SUCCESS) {
+				JSONArray array = json.getJSONArray(TAG_THREADS);
+				for (int i = 0; i < array.length(); i++) {
+					JSONObject o = array.getJSONObject(i);
+					MThread thread = new MThread(o.getString(TAG_UID), o.getString(TAG_GROUPUID), o.getString(TAG_BOOKIDENT), o.getString(TAG_TITLE), o.getString(TAG_SUBTITLE), o.getString(TAG_TEXT), o.getString(TAG_LANG), o.getString(TAG_IDENT));
+					thread.setDate(o.getString(TAG_DATE));
+					thread.setUserName(o.getString(TAG_USERNAME));
+					thread.setUserUid(o.getString(TAG_USERUID));
+					threads.add(thread);
+
+				}
+				resultIF.sentResult(threads, OnlineConnection.OK);
+			} else if (json.getInt(TAG_SUCCESS) == NO_CONTENT_FOUND)
+				resultIF.sentResult(threads, OnlineConnection.NO_CONTENT_FOUND);
+			else
+				resultIF.sentResult(threads, OnlineConnection.ERROR);
+
+		} catch (JSONException e) {
+			resultIF.sentResult(threads, OnlineConnection.ERROR_NOCONNECTION_TOSERVER);
+			e.printStackTrace();
+		}
+
+	}
+
+	public static void getEntrys(String threadUid, ResultObjectIF resultIF, boolean filled) {
+		ArrayList<MEntry> entries = new ArrayList<MEntry>();
+
+		JSONParser parser = new JSONParser();
+
+		try {
+			List<NameValuePair> parameter = new ArrayList<NameValuePair>();
+			parameter.add(new BasicNameValuePair(TAG_THREADUID, threadUid));
+			parameter.add(new BasicNameValuePair(TAG_DBLOGIN, db_login));
+			parameter.add(new BasicNameValuePair(TAG_DBPASSWORD, db_password));
+
+			String url = "http://" + ElementHandler.host + "/bergwild_connect/forum_getentries.php";
+			JSONObject json = parser.makeHttpRequest(url, "GET", parameter);
+			if (json == null) {
+				resultIF.sentResult(entries, OnlineConnection.ERROR_NOCONNECTION_TOSERVER);
+				return;
+			}
+
+			if (json.getInt(TAG_SUCCESS) == SUCCESS) {
+				JSONArray array = json.getJSONArray(TAG_ENTRIES);
+				for (int i = 0; i < array.length(); i++) {
+					JSONObject o = array.getJSONObject(i);
+					MEntry entry = new MEntry(o.getString(TAG_UID), o.getString(TAG_THREADUID), o.getString(TAG_BOOKIDENT), o.getString(TAG_TITLE), o.getString(TAG_SUBTITLE), o.getString(TAG_LANG));
+					entry.setDate(o.getString(TAG_DATE));
+					entry.setUserName(o.getString(TAG_USERNAME));
+					entry.setUserUid(o.getString(TAG_USERUID));
+					entry.setText(o.getString(TAG_TEXT));
+					entries.add(entry);
+				}
+
+				if (filled) {
+					for (MEntry entry : entries) {
+
+						final MEntry entr = entry;
+
+						getAnswers(entry.getUid(), new ResultObjectIF() {
+							@Override
+							public void sentResult(Object object, int errorcode) {
+								if (errorcode == OnlineConnection.OK) {
+									@SuppressWarnings("unchecked")
+									ArrayList<MAnswer> answers = (ArrayList<MAnswer>) object;
+									entr.setAnswers(answers);
+								}
+
+							}
+						});
+
+					}
+				}
+
+				resultIF.sentResult(entries, OnlineConnection.OK);
+			} else if (json.getInt(TAG_SUCCESS) == NO_CONTENT_FOUND)
+				resultIF.sentResult(entries, OnlineConnection.NO_CONTENT_FOUND);
+			else
+				resultIF.sentResult(entries, OnlineConnection.ERROR);
+
+		} catch (JSONException e) {
+			resultIF.sentResult(entries, OnlineConnection.ERROR_NOCONNECTION_TOSERVER);
+			e.printStackTrace();
+		}
+	}
+
+	public static void getAnswers(String entryUid, ResultObjectIF resultIF) {
+		ArrayList<MAnswer> answers = new ArrayList<MAnswer>();
+
+		JSONParser parser = new JSONParser();
+
+		try {
+			List<NameValuePair> parameter = new ArrayList<NameValuePair>();
+			parameter.add(new BasicNameValuePair(TAG_ENTRYUID, entryUid));
+			parameter.add(new BasicNameValuePair(TAG_DBLOGIN, db_login));
+			parameter.add(new BasicNameValuePair(TAG_DBPASSWORD, db_password));
+			parameter.add(new BasicNameValuePair(TAG_DBLOGIN, db_login));
+			parameter.add(new BasicNameValuePair(TAG_DBPASSWORD, db_password));
+
+			String url = "http://" + ElementHandler.host + "/bergwild_connect/forum_getanswers.php";
+			JSONObject json = parser.makeHttpRequest(url, "GET", parameter);
+			if (json == null) {
+				resultIF.sentResult(answers, OnlineConnection.ERROR_NOCONNECTION_TOSERVER);
+				return;
+			}
+
+			if (json.getInt(TAG_SUCCESS) == SUCCESS) {
+				JSONArray array = json.getJSONArray(TAG_ANSWERS);
+				for (int i = 0; i < array.length(); i++) {
+					JSONObject o = array.getJSONObject(i);
+					MAnswer entry = new MAnswer(o.getString(TAG_UID), o.getString(TAG_ENTRYUID), o.getString(TAG_BOOKIDENT), o.getString(TAG_THREADUID), o.getString(TAG_TITLE), o.getString(TAG_LANG));
+					entry.setDate(o.getString(TAG_DATE));
+					entry.setUserName(o.getString(TAG_USERNAME));
+					entry.setUserUid(o.getString(TAG_USERUID));
+					entry.setText(o.getString(TAG_TEXT));
+					answers.add(entry);
+
+				}
+				resultIF.sentResult(answers, OnlineConnection.OK);
+			} else if (json.getInt(TAG_SUCCESS) == NO_CONTENT_FOUND)
+				resultIF.sentResult(answers, OnlineConnection.NO_CONTENT_FOUND);
+			else
+				resultIF.sentResult(answers, OnlineConnection.ERROR);
+
+		} catch (JSONException e) {
+			resultIF.sentResult(answers, OnlineConnection.ERROR_NOCONNECTION_TOSERVER);
+			e.printStackTrace();
+		}
+	}
+
+	public static void getThreadsByIdent(String ident, ResultObjectIF resultIF) {
+		ArrayList<MThread> threads = new ArrayList<MThread>();
+
+		JSONParser parser = new JSONParser();
+
+		try {
+			List<NameValuePair> parameter = new ArrayList<NameValuePair>();
+			parameter.add(new BasicNameValuePair(TAG_IDENT, ident));
+			parameter.add(new BasicNameValuePair(TAG_DBLOGIN, db_login));
+			parameter.add(new BasicNameValuePair(TAG_DBPASSWORD, db_password));
+
+			String url = "http://" + ElementHandler.host + "/bergwild_connect/forum_getthreadbyident.php";
+			JSONObject json = parser.makeHttpRequest(url, "GET", parameter);
+			if (json == null) {
+				resultIF.sentResult(threads, OnlineConnection.ERROR_NOCONNECTION_TOSERVER);
+				return;
+			}
+
+			if (json.getInt(TAG_SUCCESS) == SUCCESS) {
+				JSONArray array = json.getJSONArray(TAG_THREADS);
+				for (int i = 0; i < array.length(); i++) {
+					JSONObject o = array.getJSONObject(i);
+					MThread thread = new MThread(o.getString(TAG_UID), o.getString(TAG_GROUPUID), o.getString(TAG_BOOKIDENT), o.getString(TAG_TITLE), o.getString(TAG_SUBTITLE), o.getString(TAG_TEXT), o.getString(TAG_LANG), o.getString(TAG_IDENT));
+					thread.setDate(o.getString(TAG_DATE));
+					thread.setUserName(o.getString(TAG_USERNAME));
+					thread.setUserUid(o.getString(TAG_USERUID));
+					threads.add(thread);
+
+				}
+				resultIF.sentResult(threads, OnlineConnection.OK);
+			} else if (json.getInt(TAG_SUCCESS) == NO_CONTENT_FOUND)
+				resultIF.sentResult(threads, OnlineConnection.NO_CONTENT_FOUND);
+			else
+				resultIF.sentResult(threads, OnlineConnection.ERROR);
+		} catch (JSONException e) {
+			resultIF.sentResult(threads, OnlineConnection.ERROR_NOCONNECTION_TOSERVER);
+			e.printStackTrace();
+		}
+
+	}
+
+	public static void getThreadsByUid(String uid, ResultObjectIF resultIF) {
+		ArrayList<MThread> threads = new ArrayList<MThread>();
+
+		JSONParser parser = new JSONParser();
+
+		try {
+			List<NameValuePair> parameter = new ArrayList<NameValuePair>();
+			parameter.add(new BasicNameValuePair(TAG_UID, uid));
+			parameter.add(new BasicNameValuePair(TAG_DBLOGIN, db_login));
+			parameter.add(new BasicNameValuePair(TAG_DBPASSWORD, db_password));
+
+			String url = "http://" + ElementHandler.host + "/bergwild_connect/forum_getthreadbyuid.php";
+			JSONObject json = parser.makeHttpRequest(url, "GET", parameter);
+			if (json == null) {
+				resultIF.sentResult(threads, OnlineConnection.ERROR_NOCONNECTION_TOSERVER);
+				return;
+			}
+
+			if (json.getInt(TAG_SUCCESS) == SUCCESS) {
+				JSONArray array = json.getJSONArray(TAG_THREADS);
+				for (int i = 0; i < array.length(); i++) {
+					JSONObject o = array.getJSONObject(i);
+					MThread thread = new MThread(o.getString(TAG_UID), o.getString(TAG_GROUPUID), o.getString(TAG_BOOKIDENT), o.getString(TAG_TITLE), o.getString(TAG_SUBTITLE), o.getString(TAG_TEXT), o.getString(TAG_LANG), o.getString(TAG_IDENT));
+					thread.setDate(o.getString(TAG_DATE));
+					thread.setUserName(o.getString(TAG_USERNAME));
+					thread.setUserUid(o.getString(TAG_USERUID));
+					threads.add(thread);
+
+				}
+				resultIF.sentResult(threads, OnlineConnection.OK);
+			} else if (json.getInt(TAG_SUCCESS) == NO_CONTENT_FOUND)
+				resultIF.sentResult(threads, OnlineConnection.NO_CONTENT_FOUND);
+			else
+				resultIF.sentResult(threads, OnlineConnection.ERROR);
+		} catch (JSONException e) {
+			resultIF.sentResult(threads, OnlineConnection.ERROR_NOCONNECTION_TOSERVER);
+			e.printStackTrace();
+		}
+
+	}
+
+	public static void getNewestThreads(int number, ResultObjectIF resultIF) {
+		ArrayList<MThread> threads = new ArrayList<MThread>();
+
+		JSONParser parser = new JSONParser();
+
+		try {
+			List<NameValuePair> parameter = new ArrayList<NameValuePair>();
+			parameter.add(new BasicNameValuePair(TAG_NUMBER, number + ""));
+			parameter.add(new BasicNameValuePair(TAG_DBLOGIN, db_login));
+			parameter.add(new BasicNameValuePair(TAG_DBPASSWORD, db_password));
+
+			String url = "http://" + ElementHandler.host + "/bergwild_connect/forum_getnewestthreads.php";
+			JSONObject json = parser.makeHttpRequest(url, "GET", parameter);
+			if (json == null) {
+				resultIF.sentResult(threads, OnlineConnection.ERROR_NOCONNECTION_TOSERVER);
+				return;
+			}
+
+			if (json.getInt(TAG_SUCCESS) == SUCCESS) {
+				JSONArray array = json.getJSONArray(TAG_THREADS);
+				for (int i = 0; i < array.length(); i++) {
+					JSONObject o = array.getJSONObject(i);
+					MThread thread = new MThread(o.getString(TAG_UID), o.getString(TAG_GROUPUID), o.getString(TAG_BOOKIDENT), o.getString(TAG_TITLE), o.getString(TAG_SUBTITLE), o.getString(TAG_TEXT), o.getString(TAG_LANG), o.getString(TAG_IDENT));
+					thread.setDate(o.getString(TAG_DATE));
+					thread.setUserName(o.getString(TAG_USERNAME));
+					thread.setUserUid(o.getString(TAG_USERUID));
+					threads.add(thread);
+
+				}
+				resultIF.sentResult(threads, OnlineConnection.OK);
+			} else if (json.getInt(TAG_SUCCESS) == NO_CONTENT_FOUND)
+				resultIF.sentResult(threads, OnlineConnection.NO_CONTENT_FOUND);
+			else
+				resultIF.sentResult(threads, OnlineConnection.ERROR);
+		} catch (JSONException e) {
+			resultIF.sentResult(threads, OnlineConnection.ERROR_NOCONNECTION_TOSERVER);
+			e.printStackTrace();
+		}
+
+	}
+
+	public static void getThreadGroupsByIdent(String ident, String bookIdent, ResultObjectIF resultIF) {
+		ArrayList<MThreadGroup> groups = new ArrayList<MThreadGroup>();
+
+		JSONParser parser = new JSONParser();
+
+		try {
+			List<NameValuePair> parameter = new ArrayList<NameValuePair>();
+			parameter.add(new BasicNameValuePair(TAG_IDENT, ident));
+			parameter.add(new BasicNameValuePair(TAG_BOOKIDENT, bookIdent));
+			parameter.add(new BasicNameValuePair(TAG_DBLOGIN, db_login));
+			parameter.add(new BasicNameValuePair(TAG_DBPASSWORD, db_password));
+
+			String url = "http://" + ElementHandler.host + "/bergwild_connect/forum_getgroupsbyident.php";
+			JSONObject json = parser.makeHttpRequest(url, "GET", parameter);
+			if (json == null) {
+				resultIF.sentResult(groups, OnlineConnection.ERROR_NOCONNECTION_TOSERVER);
+				return;
+			}
+
+			if (json.getInt(TAG_SUCCESS) == SUCCESS) {
+				JSONArray groupArray = json.getJSONArray(TAG_THREADGROUPS);
+				for (int i = 0; i < groupArray.length(); i++) {
+					JSONObject object = groupArray.getJSONObject(i);
+					MThreadGroup group = new MThreadGroup(object.getString(TAG_UID), object.getString(TAG_BOOKIDENT), object.getString(TAG_AREATYPE), object.getString(TAG_TITLE), object.getString(TAG_SUBTITLE), object.getString(TAG_LANG),
+							object.getString(TAG_IDENT));
+					group.setDate(object.getString(TAG_DATE));
+					groups.add(group);
+
+				}
+				resultIF.sentResult(groups, OnlineConnection.OK);
+			} else if (json.getInt(TAG_SUCCESS) == NO_CONTENT_FOUND)
+				resultIF.sentResult(groups, OnlineConnection.NO_CONTENT_FOUND);
+			else
+				resultIF.sentResult(groups, OnlineConnection.ERROR);
+
+		} catch (JSONException e) {
+			resultIF.sentResult(groups, OnlineConnection.ERROR_NOCONNECTION_TOSERVER);
+			e.printStackTrace();
+		}
+
+	}
+
+	public static void searchInForum(String searchTxt, String bookIdent, ResultObjectIF resultIF) {
+		final ArrayList<MThread> threads = new ArrayList<MThread>();
+
+		JSONParser parser = new JSONParser();
+
+		try {
+			List<NameValuePair> parameter = new ArrayList<NameValuePair>();
+			parameter.add(new BasicNameValuePair(TAG_SEARCHTEXT, searchTxt));
+			parameter.add(new BasicNameValuePair(TAG_BOOKIDENT, bookIdent));
+			parameter.add(new BasicNameValuePair(TAG_DBLOGIN, db_login));
+			parameter.add(new BasicNameValuePair(TAG_DBPASSWORD, db_password));
+
+			String url = "http://" + ElementHandler.host + "/bergwild_connect/forum_searchthreads.php";
+			JSONObject json = parser.makeHttpRequest(url, "GET", parameter);
+			if (json == null) {
+				resultIF.sentResult(threads, OnlineConnection.ERROR_NOCONNECTION_TOSERVER);
+				return;
+			}
+
+			int responseTag = json.getInt(TAG_SUCCESS);
+			if (responseTag == SUCCESS) {
+				JSONArray array = json.getJSONArray(TAG_THREADS);
+				for (int i = 0; i < array.length(); i++) {
+					JSONObject o = array.getJSONObject(i);
+					MThread thread = new MThread(o.getString(TAG_UID), o.getString(TAG_GROUPUID), o.getString(TAG_BOOKIDENT), o.getString(TAG_TITLE), o.getString(TAG_SUBTITLE), o.getString(TAG_TEXT), o.getString(TAG_LANG), o.getString(TAG_IDENT));
+					thread.setDate(o.getString(TAG_DATE));
+					thread.setUserName(o.getString(TAG_USERNAME));
+					thread.setUserUid(o.getString(TAG_USERUID));
+					threads.add(thread);
+
+				}
+			}
+
+			if (responseTag != ERROR) {
+				if (threads.size() <= 3) {
+					searchInEntries(searchTxt, bookIdent, new ResultObjectIF() {
+						@Override
+						public void sentResult(Object object, int errorcode) {
+							if (errorcode == OnlineConnection.OK) {
+								@SuppressWarnings("unchecked")
+								ArrayList<MThread> list = (ArrayList<MThread>) object;
+								for (MThread thr : list) {
+									if (!threads.contains(thr))
+										threads.add(thr);
+
+								}
+							}
+
+						}
+					});
+				}
+
+				if (threads.size() > 0)
+					resultIF.sentResult(threads, OnlineConnection.OK);
+				else
+					resultIF.sentResult(threads, OnlineConnection.NO_CONTENT_FOUND);
+
+			} else
+				resultIF.sentResult(threads, OnlineConnection.ERROR);
+
+		} catch (JSONException e) {
+			resultIF.sentResult(threads, OnlineConnection.ERROR_NOCONNECTION_TOSERVER);
+			e.printStackTrace();
+		}
+
+	}
+
+	public static void searchInEntries(String searchTxt, String bookIdent, ResultObjectIF resultIF) {
+		final ArrayList<MThread> threads = new ArrayList<MThread>();
+
+		JSONParser parser = new JSONParser();
+
+		try {
+			List<NameValuePair> parameter = new ArrayList<NameValuePair>();
+			parameter.add(new BasicNameValuePair(TAG_SEARCHTEXT, searchTxt));
+			parameter.add(new BasicNameValuePair(TAG_BOOKIDENT, bookIdent));
+			parameter.add(new BasicNameValuePair(TAG_DBLOGIN, db_login));
+			parameter.add(new BasicNameValuePair(TAG_DBPASSWORD, db_password));
+
+			String url = "http://" + ElementHandler.host + "/bergwild_connect/forum_searchentries.php";
+			JSONObject json = parser.makeHttpRequest(url, "GET", parameter);
+			if (json == null) {
+				resultIF.sentResult(threads, OnlineConnection.ERROR_NOCONNECTION_TOSERVER);
+				return;
+			}
+
+			if (json.getInt(TAG_SUCCESS) == SUCCESS) {
+				JSONArray array = json.getJSONArray(TAG_ENTRIES);
+				for (int i = 0; i < array.length(); i++) {
+					JSONObject o = array.getJSONObject(i);
+					String threadUid = o.getString(TAG_THREADUID);
+
+					getThreadsByUid(threadUid, new ResultObjectIF() {
+						@Override
+						public void sentResult(Object object, int errorcode) {
+							if (errorcode == OnlineConnection.OK) {
+								@SuppressWarnings("unchecked")
+								ArrayList<MThread> list = (ArrayList<MThread>) object;
+								if (list.size() > 0 && !threads.contains(list.get(0)))
+									threads.add(list.get(0));
+							}
+						}
+					});
+				}
+				resultIF.sentResult(threads, OnlineConnection.OK);
+			} else if (json.getInt(TAG_SUCCESS) == NO_CONTENT_FOUND)
+				resultIF.sentResult(threads, OnlineConnection.NO_CONTENT_FOUND);
+			else
+				resultIF.sentResult(threads, OnlineConnection.ERROR);
+		} catch (JSONException e) {
+			resultIF.sentResult(threads, OnlineConnection.ERROR_NOCONNECTION_TOSERVER);
+			e.printStackTrace();
+		}
+
+	}
+
+}

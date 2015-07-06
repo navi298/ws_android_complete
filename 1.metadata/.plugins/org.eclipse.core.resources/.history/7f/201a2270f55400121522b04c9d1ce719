@@ -1,0 +1,206 @@
+package de.bergwild.android.mobile;
+
+import android.app.Activity;
+import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.Color;
+import android.graphics.Point;
+import android.os.Bundle;
+import android.view.Display;
+import android.view.View;
+import android.view.WindowManager;
+import android.widget.ImageView;
+import android.widget.ImageView.ScaleType;
+import android.widget.LinearLayout;
+import android.widget.TableLayout;
+import android.widget.TableRow;
+import android.widget.TextView;
+import de.bergwild.android.mobile.component.OpaqueIconButton;
+import de.bergwild.android.mobile.tools.ElementHandler;
+import de.bergwild.android.mobile.tools.Out;
+import de.bergwild.android.util.Gui;
+import de.bergwild.android.util.component.BasisActivity;
+import de.bw.mm.MBook;
+import de.bw.mm.MMedia;
+
+public class BookActivity extends BasisActivity {
+
+	@Override
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		setTitle("Bergwild  -  " + ElementHandler.fac().getSelectedBook().getName());
+		BookView libraryView = new BookView(this, ElementHandler.fac().getSelectedBook(), getScreenResolution());
+		setContentView(libraryView);
+
+	}
+
+	class BookView extends LinearLayout {
+
+		private LinearLayout bottomLayout;
+		private Bitmap image;
+		private MBook book;
+		private int image_height = 160;
+
+		public BookView(Context context) {
+			super(context);
+		}
+
+		public BookView(Activity context, final MBook book, Point screenResolution) {
+			super(context);
+			this.book = book;
+			this.setOrientation(LinearLayout.VERTICAL);
+			this.setBackgroundColor(getResources().getColor(R.color.bgr_bookview));
+
+			Out.d("screenResolution: " + screenResolution.x + "  " + screenResolution.y);
+
+			// this.setBackgroundDrawable(getResources().getDrawable(R.drawable.border_button_dark_selector));
+			this.setBackgroundDrawable(getResources().getDrawable(R.drawable.border_gradient));
+			this.setPadding(0, 0, 4, 0);
+
+			this.setMinimumHeight(50);
+			this.setLayoutParams(new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
+
+			MMedia titleGrafic = book.getTitleGrafic();
+			image = MainTool.getImage(book.getUid(), titleGrafic, ElementHandler.mediaSize);
+
+			Header header = new Header(context);
+			addView(header);
+
+			addView(Gui.horizontalThinSeparator(context, 1));
+
+			bottomLayout = new LinearLayout(context);
+			bottomLayout.setLayoutParams(new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
+			bottomLayout.setOrientation(LinearLayout.VERTICAL);
+			bottomLayout.setPadding(5, 0, 5, 5);
+			addView(bottomLayout);
+
+		}
+
+		class Header extends LinearLayout {
+
+			private OpaqueIconButton b1;
+			private OpaqueIconButton b2;
+			private OpaqueIconButton b3;
+			private OpaqueIconButton b4;
+
+			public Header(final Activity context) {
+				super(context);
+				setLayoutParams(new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
+				setOrientation(LinearLayout.HORIZONTAL);
+				// setBackgroundColor(Color.RED);
+				ImageView imageView = new ImageView(context);
+				imageView.setPadding(5, 5, 5, 0);
+				imageView.setMaxHeight(image_height);
+				imageView.setAdjustViewBounds(true);
+				imageView.setScaleType(ScaleType.FIT_CENTER);
+				imageView.setBackgroundColor(Color.TRANSPARENT);
+				imageView.setImageBitmap(image);
+				addView(imageView);
+
+				LinearLayout innerLayout = new LinearLayout(context);
+				innerLayout.setPadding(5, 5, 5, 5);
+				innerLayout.setLayoutParams(new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT, 1f));
+				innerLayout.setOrientation(LinearLayout.VERTICAL);
+				addView(innerLayout);
+
+				TextView nameView = new TextView(context);
+				nameView.setMaxLines(1);
+				nameView.setTextAppearance(context, R.style.text_medium);
+				nameView.setText(book.getName());
+				innerLayout.addView(nameView);
+
+				TextView subnameView = new TextView(context);
+				subnameView.setTextAppearance(context, R.style.text_small);
+				subnameView.setMaxLines(1);
+				subnameView.setText(book.getName() + "   " + book.getName() + "  " + book.getName());
+				innerLayout.addView(subnameView);
+
+				b1 = new OpaqueIconButton(context, "Sortieren", "bla bla bal bla", R.drawable.icon_chapter);
+				b1.setLayoutParams(new TableRow.LayoutParams(TableRow.LayoutParams.WRAP_CONTENT, TableRow.LayoutParams.WRAP_CONTENT, 1f));
+				b1.setPadding(12, 7, 7, 7);
+				b1.setOnClickListener(new OnClickListener() {
+					@Override
+					public void onClick(View v) {
+						b1.click();
+
+					}
+				});
+
+				b2 = new OpaqueIconButton(context, "Suche", "bla bla bal bla", R.drawable.icon_chapter);
+				b2.setLayoutParams(new TableRow.LayoutParams(TableRow.LayoutParams.WRAP_CONTENT, TableRow.LayoutParams.WRAP_CONTENT, 1f));
+				b2.setPadding(12, 7, 7, 7);
+				b2.setOnClickListener(new OnClickListener() {
+					@Override
+					public void onClick(View v) {
+						b2.click();
+
+					}
+				});
+
+				b3 = new OpaqueIconButton(context, "Forum", "bla bla bal bla", R.drawable.icon_chapter);
+				b3.setLayoutParams(new TableRow.LayoutParams(TableRow.LayoutParams.WRAP_CONTENT, TableRow.LayoutParams.WRAP_CONTENT, 1f));
+				b3.setPadding(12, 7, 7, 7);
+				b3.setOnClickListener(new OnClickListener() {
+					@Override
+					public void onClick(View v) {
+						b3.click();
+
+					}
+				});
+
+				b4 = new OpaqueIconButton(context, "Chat", "bla bla bal bla", R.drawable.icon_chapter);
+				b4.setLayoutParams(new TableRow.LayoutParams(TableRow.LayoutParams.WRAP_CONTENT, TableRow.LayoutParams.WRAP_CONTENT, 1f));
+				b4.setPadding(12, 7, 7, 7);
+				b4.setOnClickListener(new OnClickListener() {
+					@Override
+					public void onClick(View v) {
+						b4.click();
+
+					}
+				});
+
+				TableLayout tableLayout = new TableLayout(context);
+				tableLayout.setLayoutParams(new TableLayout.LayoutParams(TableLayout.LayoutParams.MATCH_PARENT, TableLayout.LayoutParams.WRAP_CONTENT));
+				innerLayout.addView(Gui.horizontalThinSeparator(context, 1));
+				innerLayout.addView(tableLayout);
+
+				TableRow tableRow1 = new TableRow(context);
+				tableRow1.setLayoutParams(new TableRow.LayoutParams(TableRow.LayoutParams.MATCH_PARENT, TableRow.LayoutParams.WRAP_CONTENT));
+
+				TableRow tableRow2 = new TableRow(context);
+				tableRow2.setLayoutParams(new TableRow.LayoutParams(TableRow.LayoutParams.MATCH_PARENT, TableRow.LayoutParams.WRAP_CONTENT));
+
+				tableLayout.addView(tableRow1);
+				tableLayout.addView(tableRow2);
+
+				tableRow1.addView(b1);
+				tableRow1.addView(b2);
+				tableRow2.addView(b3);
+				tableRow2.addView(b4);
+
+			}
+		}
+
+		public MBook getBook() {
+			return book;
+		}
+
+		// class MyButton extends Button {
+		//
+		// public MyButton(Context context) {
+		// super(context);
+		// setTextColor(getTextColors().withAlpha(50));
+		// setHintTextColor(getHintTextColors().withAlpha(50));
+		// setLinkTextColor(getLinkTextColors().withAlpha(50));
+		// }
+		//
+		// }
+
+	}
+
+	private Point getScreenResolution() {
+		Display display = getWindowManager().getDefaultDisplay();
+		Point size = new Point(display.getWidth(), display.getHeight());
+		return size;
+	}
+}

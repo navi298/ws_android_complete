@@ -1,0 +1,55 @@
+package de.bergwild.android.mobile.document;
+
+import java.util.ArrayList;
+
+import android.gesture.GestureOverlayView;
+import android.view.View;
+import android.widget.LinearLayout;
+import android.widget.ScrollView;
+import de.bergwild.android.util.component.BasisActivity;
+import de.bw.mm.basis.MBookReport;
+import de.bw.mm.doc.MDocElement;
+import de.bw.mm.doc.MPage;
+
+public class VerticalLayout extends PageLayout {
+
+	private LinearLayout mainLayout;
+
+
+	public VerticalLayout(BasisActivity context, MBookReport report, MPage page, DocInterface docIF) {
+		super(context, report, page, docIF);
+		setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
+
+		mainLayout = new LinearLayout(context);
+		mainLayout.setLayoutParams(new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
+		mainLayout.setOrientation(LinearLayout.VERTICAL);
+
+		vScroll = new ScrollView(context);
+		vScroll.addView(mainLayout);
+
+		addView(vScroll);
+		setPage();
+	}
+
+	public void setPage() {
+		ArrayList<RowElement> elements = buildElements(page);
+		for (RowElement re : elements) {
+			View view = re.getView();
+			view.setLayoutParams(new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT, re.getWeight()));
+			mainLayout.addView(view);
+		}
+
+	}
+
+	public ArrayList<RowElement> buildElements(MPage page) {
+		PageBuilder builder = new PageBuilder(report, context, docIF);
+		ArrayList<RowElement> elements = new ArrayList<RowElement>();
+		for (MDocElement docElement : page.getElements()) {
+			View view = builder.buildView(context, docElement);
+			elements.add(new RowElement(docElement, view, 100f));
+		}
+		return elements;
+	}
+
+
+}

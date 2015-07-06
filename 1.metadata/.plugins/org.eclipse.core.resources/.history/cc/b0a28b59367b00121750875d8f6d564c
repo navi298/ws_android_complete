@@ -1,0 +1,120 @@
+package de.bergwild.android.mobile.connection;
+
+import de.bergwild.android.util.interfaces.ResultObjectIF;
+import de.bw.mm.basis.MBookReport;
+import de.bw.mm.basis.MVersion;
+import de.bw.mm.forum.MAnswer;
+import de.bw.mm.forum.MEntry;
+import de.bw.mm.forum.MThread;
+import de.bw.mm.forum.MThreadGroup;
+import de.bw.mm.online.MUser;
+
+public class OnlineConnector {
+
+	public static int PHP_CONNECTION = 1;
+	public static OnlineConnector connector;
+
+	private OnlineConnection connection;
+	private MUser user;
+
+	public static OnlineConnector fac() {
+		if (connector == null)
+			connector = new OnlineConnector();
+
+		return connector;
+	}
+
+	public void init(int type) {
+		if (type == PHP_CONNECTION)
+			connection = new OnlinePHPConnection();
+	}
+
+	public void getUser(String username, ResultObjectIF resultIF) {
+		connection.getUser(username, resultIF);
+	}
+
+	/** Hier sollte nur ein geprüfter User (username, passwort vorhanden und enabled) übergeben werden. **/
+	public void setUser(MUser user) {
+		this.user = user;
+	}
+
+	public boolean isUserLoggedIn() {
+		if (user != null)
+			return true;
+
+		return false;
+	}
+
+	public MUser getUser() {
+		return user;
+	}
+
+	public void getBookLinks(String userUid, ResultObjectIF resultIF) {
+		connection.getBookLinks(userUid, resultIF);
+	}
+
+	public MBookReport getReport(MVersion version) {
+		return connection.getReport(version);
+	}
+
+	public boolean saveObject(String urlStr, String targetPath, ResultObjectIF progressIF) {
+		return connection.saveObject(urlStr, targetPath, progressIF);
+	}
+
+	public MVersion getVersion(String bookUid, String language, int device) {
+		return connection.getVersion(bookUid, language, device);
+	}
+
+	public void cancelUploadDownload() {
+		connection.cancelUploadDownload();
+
+	}
+
+	public void setThreadGroup(MThreadGroup tGroup, ResultObjectIF resultIF) {
+		connection.setThreadGroup(tGroup, resultIF);
+	}
+
+	public void setThread(MThread thread, ResultObjectIF resultIF) {
+		connection.setThread(thread, resultIF);
+	}
+
+	public void setEntry(MEntry entry, ResultObjectIF resultIF) {
+		connection.setEntry(entry, resultIF);
+	}
+
+	public void setAnswer(MAnswer answer, ResultObjectIF resultIF) {
+		connection.setAnswer(answer, resultIF);
+	}
+
+	public void getThreadGroups(String areaType, String bookIdent, String lang, ResultObjectIF resultIF) {
+		connection.getThreadGroups(areaType, bookIdent, lang, resultIF);
+	}
+
+	public void getThreads(String groupUid, ResultObjectIF resultIF) {
+		connection.getThreads(groupUid, resultIF);
+	}
+
+	public void getEntrys(String threadUid, ResultObjectIF resultIF, boolean filled) {
+		connection.getEntrys(threadUid, resultIF, filled);
+	}
+
+	public void getAnswers(String entryUid, ResultObjectIF resultIF) {
+		connection.getAnswers(entryUid, resultIF);
+	}
+
+	public void getThreadsByIdent(String ident, ResultObjectIF resultIF) {
+		connection.getThreadsByIdent(ident, resultIF);
+	}
+
+	public void getThreadGroupsByIdent(String ident, String bookIdent, ResultObjectIF resultIF) {
+		connection.getThreadGroupsByIdent(ident, bookIdent, resultIF);
+	}
+
+	public void searchInForum(String searchText, String bookIdent, ResultObjectIF resultIF) {
+		connection.searchInForum(searchText, bookIdent, resultIF);
+	}
+
+	public void getNewestThreads(int number, String bookIdent, String lang, ResultObjectIF resultIF) {
+		connection.getNewestThreads(number, bookIdent,  lang, resultIF);
+	}
+}

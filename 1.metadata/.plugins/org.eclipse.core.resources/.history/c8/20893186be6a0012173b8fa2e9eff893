@@ -1,0 +1,88 @@
+package de.bergwild.android.mobile.document;
+
+import android.content.Context;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.RectF;
+import android.view.View;
+import android.widget.FrameLayout;
+import de.bergwild.android.mobile.tools.ColorTool;
+import de.bergwild.android.mobile.tools.Out;
+import de.bw.mm.MStatics;
+import de.bw.mm.doc.MDocElement;
+
+public class DocSurround extends FrameLayout {
+
+	private Paint mPaint = new Paint();
+	private MDocElement element;
+	private int backColor;
+	private RectF rectF = new RectF();
+
+	public DocSurround(Context context, MDocElement element, View view) {
+		super(context);
+		this.element = element;
+		backColor = ColorTool.getRGB(element.getBackground());
+
+		InnerLayout innerlayout = new InnerLayout(context);
+		if (view != null)
+			innerlayout.addView(view);
+		addView(innerlayout);
+
+		Out.i(element.getName() + " : " + element.getBackground().toString() + "   border: " + element.getBorderType());
+		setBackgroundColor(Color.TRANSPARENT);
+		
+
+	}
+
+	class InnerLayout extends FrameLayout {
+
+		public InnerLayout(Context context) {
+			super(context);
+			setBackgroundColor(Color.TRANSPARENT);
+		}
+
+		@Override
+		protected void onDraw(Canvas canvas) {
+			Paint paint = mPaint;
+			int radius = 7;
+			paint.setDither(true);
+			paint.setStrokeWidth(1);
+			paint.setStyle(Paint.Style.STROKE);
+
+			if (element.getBorderType() == MStatics.BORDER_RADIUS) {
+				paint.setStyle(Paint.Style.FILL);
+				paint.setColor(backColor);
+				rectF.set(0, 0, getWidth() - 1, getHeight() - 1);
+				canvas.drawRoundRect(rectF, radius, radius, paint);
+				paint.setStyle(Paint.Style.STROKE);
+				paint.setColor(Color.BLACK);
+				canvas.drawRoundRect(rectF, radius, radius, paint);
+
+			} else if (element.getBorderType() == MStatics.BORDER_SQUARE) {
+
+				paint.setStyle(Paint.Style.FILL);
+				paint.setColor(backColor);
+				canvas.drawRect(0, 0, getWidth() - 1, getHeight() - 1, paint);
+
+				paint.setStyle(Paint.Style.STROKE);
+				paint.setColor(Color.BLACK);
+				canvas.drawRect(0, 0, getWidth() - 1, getHeight() - 1, paint);
+
+			} else if (element.getBorderType() == MStatics.BORDER_NONE) {
+				paint.setStyle(Paint.Style.FILL);
+				paint.setColor(backColor);
+				canvas.drawRect(0, 0, getWidth() - 1, getHeight() - 1, paint);
+			}
+
+		}
+
+		// private void paintGeo(Canvas cnavas, Paint paint, MDocGeo docGeo) {
+		//
+		// if(docGeo.get)
+		//
+		// }
+
+	}
+
+}

@@ -1,0 +1,134 @@
+package de.bergwild.android.mobile.document;
+
+import android.widget.LinearLayout;
+import android.widget.LinearLayout.LayoutParams;
+import de.bw.mm.MStatics;
+import de.bw.mm.basis.MRectangle;
+import de.bw.mm.doc.MDocElement;
+import de.bw.mm.doc.MDocGeo;
+import de.bw.mm.doc.MDocGrafic;
+import de.bw.mm.doc.MDocText;
+import de.bw.mm.doc.MEState;
+
+public class LayoutTool {
+
+	public static boolean requestNewLineByElement(MDocElement element) {
+		if (element.getExportStates().size() == 0)
+			return false;
+
+		for (MEState eStae : element.getExportStates()) {
+			if (eStae.getState() == MStatics.ESTATE_NEW_LINE_BEFORE)
+				return true;
+		}
+
+		return false;
+	}
+
+	public static void setAlignments(android.widget.LinearLayout.LayoutParams layoutParams, MDocElement element) {
+
+		if (element.getExportStates().size() == 0)
+			return;
+
+		for (MEState eStae : element.getExportStates()) {
+			if (eStae.getState() == MStatics.ESTATE_LEFT_ALIGN) {
+				int dis = Integer.parseInt(eStae.getValue().toString());
+				layoutParams.leftMargin = dis;
+
+			} else if (eStae.getState() == MStatics.ESTATE_RIGHT_ALIGN) {
+				int dis = Integer.parseInt(eStae.getValue().toString());
+				layoutParams.rightMargin = dis;
+
+			}
+
+		}
+
+	}
+
+	public static boolean hasLeftAlign(MDocElement element) {
+
+		if (element.getExportStates().size() == 0)
+			return false;
+
+		for (MEState eStae : element.getExportStates()) {
+			if (eStae.getState() == MStatics.ESTATE_LEFT_ALIGN) {
+				return true;
+			}
+
+		}
+		return false;
+
+	}
+
+	public static boolean hasRightAlign(MDocElement element) {
+
+		if (element.getExportStates().size() == 0)
+			return false;
+
+		for (MEState eStae : element.getExportStates()) {
+			if (eStae.getState() == MStatics.ESTATE_RIGHT_ALIGN) {
+				return true;
+			}
+
+		}
+		return false;
+
+	}
+
+	/**
+	 * Prinzip zur Elementgröße: Zuerst wird überprüft, ob die Elemente mit Ihrer normalen Größe in die Linie (Row,
+	 * Screenbreite) passen.
+	 * 
+	 * Wenn ja, wird bei allen Elementen, die Ihre Ausdehnung selber veranlassen(DocText, DocGrafik)
+	 * LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT übergeben und die Vertkale Verteilung über weight gemacht.
+	 * Elemente wie z.b. DocGeo, die Ihre Ausdehnung nicht selber machen können, bekommen Ihre ganaue Größe übergeben
+	 * und zawr ohne eine Stauchung einzurechnen, denn es wurde ja schon voher überprüft, ob alles in die Zeile
+	 * reinpasst.
+	 * 
+	 * Wenn nicht alles in die Zeile passt, dann wird den Elemente ihren genaue Größe multipliziert mit der nötigen
+	 * Stauchung übergeben. Ausnahmen gibt es hier z.b. beim Text, denn der soll sich ja nach unten hin so ausdehnen,
+	 * das er komplett dargestellt werden kann und bekommt deshalb für die Höhe LayoutParams.WRAP_CONTENT
+	 * 
+	 * Die Elemente benötigen hier alle ihre speziellen Einstellungen, damit es gut aussieht.
+	 * 
+	 * **/
+
+	public static LayoutParams getLayoutParams(RowElement re, PageRow roe, float availableWidth) {
+
+		System.out.println("re: " + re.getElement().getName());
+
+		LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT, 100 - re.getWeight());
+
+		float optimalWidth = 0;
+		for (RowElement rElem : roe.getElements()) {
+			MRectangle b = MRectangle.toRectangle(rElem.getElement().getBounds());
+			optimalWidth += (b.getW() + PageLayout.VIEW_DISTANCE);
+		}
+
+		MRectangle bounds = MRectangle.toRectangle(re.getElement().getBounds());
+		if (availableWidth >= optimalWidth) {
+			float stauchung = availableWidth / optimalWidth;
+			layoutParams = new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT, 100 - re.getWeight());
+			if (re.getElement() instanceof MDocGeo)
+				layoutParams = new LinearLayout.LayoutParams(bounds.getW(), bounds.getH());
+
+		} else {
+			float stauchung = availableWidth / optimalWidth;
+			layoutParams = new LinearLayout.LayoutParams((int) (bounds.getW() * stauchung), (int) (bounds.getH() * stauchung), 100 - re.getWeight());
+			if (re.getElement() instanceof MDocText)
+				layoutParams = new LinearLayout.LayoutParams((int) (bounds.getW() * stauchung), LayoutParams.WRAP_CONTENT, 100 - re.getWeight());
+
+			// layoutParams = new LinearLayout.LayoutParams((int) (bounds.getW() * stauchung), (int) (bounds.getH() *
+			// stauchung), 100 - re.getWeight());
+
+		}
+		// LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT,
+		// LayoutParams.WRAP_CONTENT, 100 - re.getWeight());
+		// if (re.getElement() instanceof MDocGeo)
+		// layoutParams = new LinearLayout.LayoutParams(bounds.getW(), bounds.getH(), 100 - re.getWeight());
+		// else if (re.getElement() instanceof MDocGrafic)
+		// layoutParams = new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, bounds.getH(), 100 - re.getWeight());
+
+		return layoutParams;
+	}
+
+}

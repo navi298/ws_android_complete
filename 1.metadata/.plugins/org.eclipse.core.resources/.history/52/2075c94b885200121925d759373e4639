@@ -1,0 +1,275 @@
+package de.bergwild.android.mobile;
+
+import android.content.Context;
+import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.os.Bundle;
+import android.support.v4.view.ViewPager.LayoutParams;
+import android.view.Menu;
+import android.view.MenuItem;
+import android.view.View;
+import android.widget.Button;
+import android.widget.LinearLayout;
+import de.bergwild.android.mobile.connection.LocalConnector;
+import de.bergwild.android.mobile.connection.OnlineConnector;
+import de.bergwild.android.mobile.tools.ElementHandler;
+import de.bergwild.android.mobile.tools.Out;
+import de.bergwild.android.util.Gui;
+import de.bergwild.android.util.ImageUtil;
+import de.bergwild.android.util.ProcessWatch;
+import de.bergwild.android.util.component.BasisActivity;
+import de.bergwild.android.util.component.Feedback;
+import de.bergwild.android.util.interfaces.ResultDoneIF;
+import de.bergwild.android.util.interfaces.ResultIntInterface;
+import de.bw.mm.tools.CodeReader;
+import de.bw.mm.tools.PhotoInterface;
+
+public class MainMobile extends BasisActivity {
+
+	public static final int REQUEST_PREFERENCES = 14323445;
+
+	@Override
+	public void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+
+		ElementHandler.fac().setMainMobile(this);
+		ElementHandler.firstStartEver = MainTool.isFirstStartEver(this);
+		OnlineConnector.fac().init(OnlineConnector.PHP_CONNECTION);
+		LocalConnector.fac().init(LocalConnector.OBJECT_CONNECTION);
+		setGui();
+
+		boolean newProcess = ProcessWatch.isNewProcess();
+		boolean online = MainTool.isOnline(this);
+
+		Out.d("Is online: " + online);
+
+		if (savedInstanceState == null) {
+
+			StartProcess.fac().init(this, new StartProcessDone(), online);
+		} else
+			updateGui();
+
+		Out.d("savedInstanceState: " + savedInstanceState);
+
+		// File file = new File("mnt/sdcard/bergwild/testcode.png");
+
+		// QRGenerator.generate(file, "NZ1234");
+
+		// Out.d("Code: " + QRGenerator.read(file));
+
+	}
+
+	@Override
+	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+		super.onActivityResult(requestCode, resultCode, data);
+		Out.d("onActivityResult: " + requestCode);
+	}
+
+	@Override
+	public boolean onCreateOptionsMenu(Menu menu) {
+		getMenuInflater().inflate(R.menu.activity_main_mobile, menu);
+		return true;
+	}
+
+	@Override
+	public boolean onPrepareOptionsMenu(Menu menu) {
+		// kann mann dann noch feiner einstellen.
+		menu.getItem(0).setEnabled(true);
+		return true;
+	}
+
+	@Override
+	public boolean onMenuItemSelected(int featureId, MenuItem item) {
+		switch (item.getItemId()) {
+		case R.id.mI_startprefs:
+			startActivityForResult(new Intent(this, MobilePrefActivity.class), REQUEST_PREFERENCES);
+			break;
+		}
+
+		return super.onMenuItemSelected(featureId, item);
+	}
+
+	class StartProcessDone implements ResultDoneIF {
+		@Override
+		public void done() {
+			runOnUiThread(new Runnable() {
+				@Override
+				public void run() {
+					updateGui();
+				}
+			});
+
+		}
+	}
+
+	/**
+	 * startRecovery: Um daten Datenfelder und Layout nach dem Bilschirmdrehen oder,... wiederherzustellen.
+	 * 
+	 * savedInstanceState ist null, wenn der user die return taste benutzt hat, obwohl die Activity noch im alten
+	 * Process läuft und deshalb Daten z.b. aus dem Elementhandler noch verfügbar sind. Darum wird mit ProcessWatch
+	 * überprüft, on die Activity noch im alten Process läuft. Und wenn ja, dann wird das layout mit den alten daten
+	 * wieder hergestellt.
+	 **/
+	protected void startRecovery() {
+		Feedback.longToast(this, "Layout-Recovery");
+		// setTitle();
+		// if (ElementHandler.fac().getOpenBook() != null) {
+		// setBook(ElementHandler.fac().getOpenBook());
+		// if (ElementHandler.fac().getOpenChapter() != null)
+		// setChapter(ElementHandler.fac().getOpenChapter());
+		// }
+
+	}
+
+	public void setGui() {
+
+		setContentView(R.layout.activity_main_mobile);
+		// ViewGroup header = (ViewGroup) findViewById(R.id.layout_header);
+		// header.addView(new Header(this));
+
+		Button libraryButton = (Button) findViewById(R.id.but_library);
+		libraryButton.setTextColor(getResources().getColor(R.color.text_button_big));
+		libraryButton.setText(Gui.textDoubleLine("Bibliothek öffen", "Bücher auswählen und lesen"));
+		libraryButton.setOnClickListener(new View.OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				startActivity(new Intent(MainMobile.this, LibraryActivity.class));
+			}
+		});
+
+		Button startUpdateButton = (Button) findViewById(R.id.but_startUpdate);
+		startUpdateButton.setTextColor(getResources().getColor(R.color.text_button_big));
+		startUpdateButton.setText(Gui.textDoubleLine("Bücher aktualisieren", "Alle Bücher auf die neueste Version/Auflage aktualisieren"));
+		startUpdateButton.setOnClickListener(new View.OnClickListener() {
+			@Override
+			public void onClick(View v) {
+
+				if (MainTool.isOnline(MainMobile.this)) {
+					if (OnlineConnector.fac().isUserLoggedIn()) {
+						StartProcess.fac().step4_updateBooks(null, true);
+					} else
+						Feedback.showInfo(MainMobile.this, "Bitte einloggen", "Um die Bücher zu aktualisieren, müssen sich sich einloggen.", null, Feedback.INFO_TYPE_INFO);
+				} else
+					Feedback.showInfo(MainMobile.this, "Update nicht möglich", "Um die Bücher zu aktualisieren, muss eine Internet-Verbindung zur Verfügung stehen.", null, Feedback.INFO_TYPE_INFO);
+
+			}
+		});
+
+		Button loginButton = (Button) findViewById(R.id.but_login);
+		loginButton.setTextColor(getResources().getColor(R.color.text_button_big));
+		loginButton.setText(Gui.textDoubleLine("Login / Anmeldung", "Um Online-Funktionen wie Chat / Forum und Update zu nutzen"));
+		loginButton.setOnClickListener(new View.OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				if (!MainTool.isOnline(MainMobile.this))
+					Feedback.showInfo(MainMobile.this, "Login nicht möglich", "Um sich einzuloggen, muss eine Internet-Verbindung zur Verfügung stehen.", null, Feedback.INFO_TYPE_INFO);
+				else
+					StartProcess.fac().step2_login(new ResultIntInterface() {
+						@Override
+						public void sentResult(int i) {
+							updateGui();
+						}
+					}, true);
+			}
+		});
+
+		Button testButton = (Button) findViewById(R.id.but_test);
+		testButton.setTextColor(getResources().getColor(R.color.text_button_big));
+		testButton.setText(Gui.textDoubleLine("Testen", "Später wieder entfernen"));
+		testButton.setOnClickListener(new View.OnClickListener() {
+			@Override
+			public void onClick(View v) {
+
+				Bitmap bitmap = ImageUtil.loadImage("mnt/sdcard/bergwild/temp/bwcode_photo.JPG");
+				int[][] imageArray = ImageUtil.toRGBArray(bitmap);
+				PhotoIFTest photoIF = new PhotoIFTest(imageArray, bitmap);
+
+				new CodeReader().getCode(imageArray, photoIF);
+
+				// startActivity(new Intent(MainMobile.this, Compass.class));
+				// startActivity(new Intent(MainMobile.this, DrawPoints.class));
+				// startActivity(new Intent(MainMobile.this, FingerPaint.class));
+				// startActivity(new Intent(MainMobile.this, FrameBufferObjectActivity.class));
+				// Nur mit android:hardwareAccelerated="false" wegen drawPicture und in GraphicsActivity auf true;
+				// startActivity(new Intent(MainMobile.this, Pictures.class));
+				// startActivity(new Intent(MainMobile.this, PolyToPoly.class));
+				// startActivity(new Intent(MainMobile.this, ShapeDrawable1.class));
+				// Nur mit android:hardwareAccelerated="false" wegen drawPicture
+				// startActivity(new Intent(MainMobile.this, TouchPaint.class));
+				// startActivity(new Intent(MainMobile.this, TestDrawActivity.class));
+				// startActivity(new Intent(MainMobile.this, GraficOverviewActivity.class));
+
+				// Intent intent = new Intent(getApplicationContext(), ZxingExampleActivity.class);
+				// startActivity(intent);
+			}
+		});
+
+	}
+
+	public void updateGui() {
+
+		boolean loggedIn = OnlineConnector.fac().isUserLoggedIn();
+
+		Button loginButton = (Button) findViewById(R.id.but_login);
+		loginButton.setTextColor(getResources().getColor(R.color.text_button_big));
+		String txtLarge = loggedIn ? "Angemeldet: " + OnlineConnector.fac().getUser().getUsername() : "Login / Anmeldung";
+		String txtSmall = loggedIn ? "Online-Funktionen wie Chat/Forum und Update sind freigeschaltet" : "Loggen Sie sich ein um Online-Funktionen wie Chat/Forum und Update zu nutzen";
+		loginButton.setText(Gui.textDoubleLine(txtLarge, txtSmall));
+
+		Button startUpdateButton = (Button) findViewById(R.id.but_startUpdate);
+		startUpdateButton.setTextColor(getResources().getColor(R.color.text_button_big));
+		String txtLarge2 = loggedIn ? "Bücher aktualisieren" : "Bücher aktualisieren";
+		String txtSmall2 = loggedIn ? "Alle Bücher auf die neueste Version/Auflage aktualisieren" : "Um diese Funktion nutzen zu können müssen Sie sich erst einloggen";
+		startUpdateButton.setText(Gui.textDoubleLine(txtLarge2, txtSmall2));
+
+	}
+
+	class PhotoIFTest extends PhotoInterface {
+		private int[][] imageArray;
+		private Bitmap bitmap;
+
+		public PhotoIFTest(int[][] imageArray, Bitmap bitmap) {
+			super(imageArray);
+			this.imageArray = imageArray;
+			this.bitmap = bitmap;
+
+		}
+
+		@Override
+		public int[][] rotateImage(double alphaDiff, int centerX, int centery) {
+
+			return imageArray;
+		}
+
+		@Override
+		public int[][] scaleImage(double hFcator) {
+			return imageArray;
+		}
+
+		@Override
+		public boolean isScaleEnabled() {
+			return false;
+		}
+
+		@Override
+		public boolean isRotateEnabled() {
+			return false;
+		}
+
+	}
+
+}
+
+class Header extends View {
+
+	public Header(Context context) {
+		super(context);
+		setLayoutParams(new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT, 0f));
+		setMinimumHeight(30);
+
+		this.setBackgroundDrawable(getResources().getDrawable(R.drawable.border_gradient));
+
+	}
+
+}

@@ -1,0 +1,72 @@
+package de.bergwild.android.mobile.document;
+
+import android.view.Gravity;
+import de.bw.mm.MStatics;
+import de.bw.mm.doc.MDocElement;
+import de.bw.mm.doc.MEState;
+
+public class LayoutTool {
+
+	public static boolean requestNewLineByElement(MDocElement element) {
+		if (element.getExportStates().size() == 0)
+			return false;
+
+		for (MEState eStae : element.getExportStates()) {
+			if (eStae.getState() == MStatics.ESTATE_NEW_LINE_BEFORE)
+				return true;
+		}
+
+		return false;
+	}
+
+	public static void setAlignments(android.widget.LinearLayout.LayoutParams layoutParams, MDocElement element) {
+
+		if (element.getExportStates().size() == 0)
+			return;
+
+		for (MEState eStae : element.getExportStates()) {
+			if (eStae.getState() == MStatics.ESTATE_LEFT_ALIGN) {
+				int dis = Integer.parseInt(eStae.getValue().toString());
+				layoutParams.leftMargin = dis;
+
+			} else if (eStae.getState() == MStatics.ESTATE_RIGHT_ALIGN) {
+				int dis = Integer.parseInt(eStae.getValue().toString());
+				layoutParams.rightMargin = dis;
+
+			}
+
+		}
+
+	}
+
+	public static boolean hasLeftAlign(MDocElement element) {
+
+		if (element.getExportStates().size() == 0)
+			return false;
+
+		for (MEState eStae : element.getExportStates()) {
+			if (eStae.getState() == MStatics.ESTATE_LEFT_ALIGN) {
+				return true;
+			}
+
+		}
+		return false;
+
+	}
+
+	public static boolean hasRightAlign(MDocElement element) {
+
+		if (element.getExportStates().size() == 0)
+			return false;
+
+		for (MEState eStae : element.getExportStates()) {
+			if (eStae.getState() == MStatics.ESTATE_RIGHT_ALIGN) {
+				return true;
+			}
+
+		}
+		return false;
+
+	}
+
+}

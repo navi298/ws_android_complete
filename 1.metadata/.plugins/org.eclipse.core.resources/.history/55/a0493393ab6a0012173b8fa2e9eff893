@@ -1,0 +1,236 @@
+package de.bergwild.android.mobile.document;
+
+import java.util.ArrayList;
+
+import android.view.View;
+import android.widget.LinearLayout;
+import android.widget.ScrollView;
+import de.bergwild.android.mobile.MainTool;
+import de.bergwild.android.util.component.BasisActivity;
+import de.bw.mm.MStatics;
+import de.bw.mm.basis.MBookReport;
+import de.bw.mm.basis.MInsets;
+import de.bw.mm.basis.MRectangle;
+import de.bw.mm.doc.MDocElement;
+import de.bw.mm.doc.MPage;
+
+public class VerticalRowLayout extends PageLayout {
+
+	private LinearLayout canvas;
+	// Wenn die Stauchung der Element in einer Linie (Row) höher ist (also der Faktor kleiner als MIN_STAUCHUNG) dann
+	// wird eione neue Row angefangen und das Eöement kommt in eine neue Row
+	private float MIN_STAUCHUNG = 0.80f;
+	private float canvasWidth;
+	private ArrayList<View> allViews = new ArrayList<View>();
+
+	public VerticalRowLayout(BasisActivity context, MBookReport report, MPage page, int pageIndex, DocInterface docIF) {
+		super(context, report, page, docIF);
+
+		setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
+		canvas = new LinearLayout(context);
+		canvas.setLayoutParams(new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
+		canvas.setOrientation(LinearLayout.VERTICAL);
+		canvas.setPadding(PAGE_INS_LEFT, 0, 0, PAGE_INS_BOTTOM);
+		vScroll = new ScrollView(context);
+		vScroll.addView(canvas);
+		vScroll.requestDisallowInterceptTouchEvent(true);
+		addView(vScroll);
+
+		ArrayList<MPage> pages = new ArrayList<MPage>();
+		pages.add(page);
+		HeaderTextHelper textHelper = new HeaderTextHelper(docIF.getDocument() == null ? pages : docIF.getDocument().getPages(), docIF.getDocument() == null ? "" : docIF.getDocument().getName());
+
+		String textLeft = page.gethStateLeft() == MStatics.TEXTSTATE_FIXTEXT ? page.gethTextLeft() : textHelper.getTextFor(pageIndex, page.gethStateLeft());
+		String textRight = page.gethStateRight() == MStatics.TEXTSTATE_FIXTEXT ? page.gethTextRight() : textHelper.getTextFor(pageIndex, page.gethStateRight());
+		canvas.addView(new PageHeader(context, page, textLeft, textRight));
+
+		setPage();
+	}
+
+	public void setPage() {
+
+		allViews.clear();
+
+		canvasWidth = MainTool.getScreenResolution(context).x;
+		canvasWidth = Math.min(canvasWidth, page.getWidth());
+		canvas.setLayoutParams(new LayoutParams((int) canvasWidth, LayoutParams.WRAP_CONTENT));
+		ArrayList<PageRow> rows = buildRows(page);
+		for (PageRow roe : rows) {
+
+			LinearLayout hLayout = new LinearLayout(context);
+			hLayout.setLayoutParams(new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
+			hLayout.setOrientation(LinearLayout.HORIZONTAL);
+			hLayout.setPadding(0, VIEW_DISTANCE, VIEW_DISTANCE, 0);
+			canvas.addView(hLayout);
+			for (RowElement re : roe.getElements()) {
+				View view = re.getView();
+				allViews.add(view);
+				view.setPadding(VIEW_DISTANCE, 0, 0, 0);
+
+				MRectangle bounds = MRectangle.toRectangle(re.getElement().getBounds());
+				// docSurround.setLayoutParams(new LinearLayout.LayoutParams(bounds.getW(), bounds.getH()));
+				// docSurround.setLayoutParams(new LinearLayout.LayoutParams(bounds.getW(), bounds.getH()));
+				float stauchung = Math.min(re.getStauchung(), 1);
+				LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams((int) ((float) bounds.getW() * stauchung), bounds.getH(), 100 - re.getWeight());
+				// LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT,
+				// LayoutParams.WRAP_CONTENT, 100 - re.getWeight());
+				LayoutTool.setAlignments(layoutParams, re.getElement());
+				hLayout.addView(view, layoutParams);
+			}
+		}
+
+	}
+
+	public ArrayList<PageRow> buildRows(MPage page) {
+
+		MInsets insets = MInsets.toInsets(page.getContentInsets());
+
+		// Die ContentInsets werden nicht benutzt um Abstände oder sowas einzubauen, sondern nur um die Gewichtung der
+		// Element realistischer an den tatsächlichen Seitenaufbau aus dem Builder zu machen. Wenn berechnet wird ob
+		// noch was in die Gleiche Zeile passt, gibt es sonst andere Ergebnisse als im Builder vermutet
+		float availableWidth = canvasWidth - (insets.getL() + insets.getR());
+
+		PageBuilder builder = new PageBuilder(report, context, docIF);
+		ArrayList<PageRow> rows = new ArrayList<PageRow>();
+
+		float neddedWidth = 0;
+		PageRow row = new PageRow();
+		for (int i = 0; i < page.getElements().size(); i++) {
+			MDocElement docElement = page.getElements().get(i);
+			View view = builder.buildView(context, docElement);
+			MRectangle bounds = MRectangle.toRectangle(docElement.getBounds());
+			neddedWidth += bounds.getW();
+			float stauchung = availableWidth / neddedWidth;
+
+			// Out.i(docElement.getName() + ": " + bounds.getW() + "    neddedWidth: " + neddedWidth +
+			// "      stauchung: " + stauchung);
+
+			if (stauchung < MIN_STAUCHUNG) {
+				row = toNewRow(rows, row, docElement, view, bounds, stauchung);
+				neddedWidth = bounds.getW();
+			} else if (LayoutTool.requestNewLineByElement(docElement)) {
+				row = toNewRow(rows, row, docElement, view, bounds, stauchung);
+				neddedWidth = bounds.getW();
+			} else
+				row.addElement(new RowElement(docElement, view, bounds, stauchung));
+
+		}
+
+		if (row.getElements().size() > 0)
+			rows.add(row);
+
+		setWeightToElements(rows);
+
+		return rows;
+
+	}
+
+	private PageRow toNewRow(ArrayList<PageRow> rows, PageRow row, MDocElement docElement, View view, MRectangle bounds, float stauchung) {
+		rows.add(row);
+		row = new PageRow();
+		row.addElement(new RowElement(docElement, view, bounds, stauchung));
+		return row;
+	}
+
+	private void setWeightToElements(ArrayList<PageRow> rows) {
+
+		for (PageRow pageRow : rows) {
+			float fullWidth = 0;
+			for (RowElement rowElement : pageRow.getElements())
+				fullWidth += rowElement.getBounds().getW();
+			float weightPerPix = 100 / fullWidth;
+
+			for (RowElement rowElement : pageRow.getElements()) {
+				float weight = rowElement.getBounds().getW() * weightPerPix;
+
+				rowElement.setWeight(weight);
+			}
+		}
+
+	}
+}
+
+class RowElement {
+	private MDocElement element;
+	private View view;
+	private float weight;
+	private MRectangle bounds;
+	private float stauchung = 1;
+
+	public RowElement() {
+		super();
+	}
+
+	public RowElement(MDocElement element, View view, float weight) {
+		super();
+		this.element = element;
+		this.view = view;
+		this.weight = weight;
+	}
+
+	public RowElement(MDocElement element, View view, MRectangle bounds, float stauchung) {
+		super();
+		this.element = element;
+		this.view = view;
+		this.bounds = bounds;
+		this.stauchung = stauchung;
+	}
+
+	public MDocElement getElement() {
+		return element;
+	}
+
+	public void setElement(MDocElement element) {
+		this.element = element;
+	}
+
+	public View getView() {
+		return view;
+	}
+
+	public void setView(View view) {
+		this.view = view;
+	}
+
+	public float getWeight() {
+		return weight;
+	}
+
+	public void setWeight(float weight) {
+		this.weight = weight;
+	}
+
+	public MRectangle getBounds() {
+		return bounds;
+	}
+
+	public void setBounds(MRectangle bounds) {
+		this.bounds = bounds;
+	}
+
+	public float getStauchung() {
+		return stauchung;
+	}
+
+	public void setStauchung(float stauchung) {
+		this.stauchung = stauchung;
+	}
+
+}
+
+class PageRow {
+	private ArrayList<RowElement> elements = new ArrayList<RowElement>();
+
+	public ArrayList<RowElement> getElements() {
+		return elements;
+	}
+
+	public void setElements(ArrayList<RowElement> elements) {
+		this.elements = elements;
+	}
+
+	public void addElement(RowElement element) {
+		elements.add(element);
+	}
+
+}

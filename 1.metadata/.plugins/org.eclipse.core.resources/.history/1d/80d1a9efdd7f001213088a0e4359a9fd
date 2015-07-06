@@ -1,0 +1,82 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="de.bergwild.android.mobile"
+    android:versionCode="1"
+    android:versionName="1.0" >
+
+    <uses-sdk
+        android:minSdkVersion="9"
+        android:targetSdkVersion="15" />
+
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.SET_WALLPAPER" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+
+    <application
+        android:hardwareAccelerated="false"
+        android:icon="@drawable/ic_launcher"
+        android:label="@string/app_name"
+        android:theme="@style/AppTheme" >
+        <activity
+            android:name=".MainMobile"
+            android:label="@string/title_main" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity android:name=".MobilePrefActivity" >
+        </activity>
+        <activity android:name="GraficOverviewActivity" >
+        </activity>
+        <activity android:name=".testing.paint.DrawPoints" >
+        </activity>
+        <activity android:name=".testing.paint.FingerPaint" >
+        </activity>
+        <activity android:name=".testing.paint.Compass" >
+        </activity>
+        <activity android:name=".testing.paint.FrameBufferObjectActivity" >
+        </activity>
+        <activity android:name=".testing.paint.PolyToPoly" >
+        </activity>
+        <activity android:name=".testing.paint.TouchPaint" >
+        </activity>
+        <activity android:name=".testing.paint.ScaleToFit" >
+        </activity>
+        <activity android:name=".testing.paint.ShapeDrawable1" >
+        </activity>
+        <activity android:name=".testing.my.TestDrawActivity" >
+        </activity>
+        <activity
+            android:name="LibraryActivity"
+            android:description="@string/title_library"
+            android:label="@string/title_library" >
+        </activity>
+        <activity android:name=".tools.code.CodeActivity" >
+        </activity>
+        <activity android:name="BookActivity" >
+        </activity>
+        <activity android:name=".activities.SingleImageActivity" >
+        </activity>
+        <activity android:name=".ChapterOutdoorActivity" >
+        </activity>
+        <service android:name=".service.GPSService"></service>
+        <activity android:name=".info.ChapterInfoActivity"></activity>
+        <activity android:name="ProfileActivity"></activity>
+        <activity android:name=".info.ProfileInfoActivity"></activity>
+        <service android:name=".service.UpdateService"></service>
+        <activity android:name=".forum.ForumActivity"></activity>
+        <activity android:name="ThreadGroupActivity"></activity>
+        <activity android.forum.ThreadActivityctivity"></activity>
+        <activity .forum.ForumSearchActivitySearchActivity"></activity>
+        <activity android:name="AudioshowActivity"></activity>
+        <service android:name=".audio.AudioService"></service>
+
+
+    </application>
+
+</manifest>

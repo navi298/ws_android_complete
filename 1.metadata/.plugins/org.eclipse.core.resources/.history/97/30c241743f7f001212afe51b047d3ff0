@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget31"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent" >
+
+    <LinearLayout
+        android:id="@+id/ll_audioshow_bottom"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content" >
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/ll_audioshow_top"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content" >
+
+        <Button
+            android:id="@+id/ButtonPlayStop"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:text="Play"
+            android:textSize="15pt"
+            android:textStyle="bold" />
+
+        <SeekBar
+            android:id="@+id/SeekBar01"
+            android:layout_width="fill_parent"
+            android:layout_height="30dp" />
+    </LinearLayout>
+
+</FrameLayout>
